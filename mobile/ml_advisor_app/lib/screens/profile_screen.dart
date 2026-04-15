@@ -24,8 +24,10 @@ class ProfileScreen extends StatelessWidget {
               radius: 50,
               backgroundColor: AppTheme.primary.withOpacity(0.1),
               child: Text(
-                (user?.displayName ?? 'U')[0].toUpperCase(),
-                style: const TextStyle(
+                  (user?.displayName != null && user!.displayName!.trim().isNotEmpty 
+                      ? user!.displayName!.trim()[0] 
+                      : 'U').toUpperCase(),
+                  style: const TextStyle(
                     fontSize: 36, fontWeight: FontWeight.bold, color: AppTheme.primary),
               ),
             ),
