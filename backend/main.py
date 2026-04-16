@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware  #causes browser to allow our
 app = FastAPI()
 
 app.add_middleware(
-    CORSMiddleware,      #this is the middlewaer taht runs between the clien request (Flutter) and API endpoint
+    CORSMiddleware,      #this is the middlewaer that runs between the clien request (Flutter) and API endpoint
     allow_origins = ["*"],
     allow_methods = ["*"],
     allow_headers = ["*"],
