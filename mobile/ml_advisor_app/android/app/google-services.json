@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "941156980455",
+    "project_id": "ml-advisor-v2",
+    "storage_bucket": "ml-advisor-v2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:941156980455:android:6887ce0b6e977edbafb442",
+        "android_client_info": {
+          "package_name": "com.mladvir.ml_advisor_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDipbsrNhdeqZC_7XeghmqESPfa0txUHO8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
