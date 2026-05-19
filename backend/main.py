@@ -11,9 +11,11 @@ app.add_middleware(
 )
 
 @app.get("/ping")
-def ping():
+def ping():                            #this function runs when someone visits /ping
     return {"status": "ok", "message": "ML Advisor API is running"}
 
 @app.get("/models")
 def get_models():
     return {"models":[]}
+
+
