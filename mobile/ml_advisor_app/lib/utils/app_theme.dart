@@ -11,6 +11,9 @@ class AppWideTheme {
   static const Color surfaceColour = Color(
       0xFFFFFFFF); //basically background of ui components that sits on top of the background
 
+  static const Color textPrimary = Color(0xFF2E2E2E);   // dark grey
+  static const Color textSecondary = Color(0xFF5F5F5F);// lighter grey
+
   static ThemeData lightTheme = ThemeData(
     //more modern look for our app using version 3
     useMaterial3: true,
@@ -25,7 +28,12 @@ class AppWideTheme {
       surface: surfaceColour,
     ),
 
-    textTheme: GoogleFonts.interTextTheme(),
+    textTheme: GoogleFonts.interTextTheme().copyWith(
+      bodyLarge: const TextStyle(color: textPrimary),
+      bodyMedium: const TextStyle(color: textPrimary),
+      bodySmall: const TextStyle(color: textSecondary),
+      titleLarge: const TextStyle(color: textPrimary),
+    ),
 
     appBarTheme: const AppBarTheme(
       backgroundColor:
