@@ -176,7 +176,7 @@ Python 3.12.x
 
 After extracting, you should see a folder named something like:
 ML-Advisor
-
+---
 ### Step 6: Install Ollama (For AI Chat)
 
 **What it does:** Ollama runs the AI model locally on your computer for the AI Chat feature.
@@ -218,3 +218,49 @@ Important Notes
 - The download may take 5–10 minutes
 - The model size is approximately 4 GB
 - Make sure you have a stable internet connection
+---
+### Step 7: Set Up the Backend (FastAPI)
+
+**What it does:** The brain of the app — handles recommendations, model data, API endpoints, and backend logic.
+
+#### Instructions:
+
+1. Open a terminal
+
+2. Navigate to the backend folder:
+
+```bash
+cd ml-advisor/backend
+```
+
+3. Create a virtual environment:
+```bash
+python -m venv venv
+```
+
+4. Activate the virtual environment:
+**Windows:**
+```bash
+venv\Scripts\activate
+```
+**Mac/Linux:**
+```bash
+source venv/bin/activate
+```
+5.You should now see (venv) at the beginning of your terminal line
+
+6.Install all required packages:
+```bash
+pip install -r requirements.txt
+```
+
+7. Wait for all packages to install (1–2 minutes)
+8. Start the FastAPI backend server:
+```bash
+uvicorn main:app --reload
+```
+9. You should see:
+```text
+Uvicorn running on http://127.0.0.1:8000
+```
+Leave this terminal running
