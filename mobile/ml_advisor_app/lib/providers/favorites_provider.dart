@@ -1,49 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/firestore_service.dart';
 
 class FavoritesProvider extends ChangeNotifier {
+  final FirestoreService _service = FirestoreService();
   List<String> _favoriteIds = [];
-  final FirebaseFirestore _firestore = FirebaseFirestore
-      .instance; //creating a session/connection/instance of session to firebase database
 
   List<String> get favoriteIds => _favoriteIds;
 
-  bool isFavorite(String modelId) {
-    //checks if a model is a favorite. if the modelID is found in the favourites ID, the model is a favorite and return true or false if not found
-    return _favoriteIds.contains(modelId);
-  }
-
-  int get favoritesCount => _favoriteIds
-      .length; //return how many favorites a user(current user, not all) has
+  bool isFavorite(String modelId) => _favoriteIds.contains(modelId);
 
   Future<void> loadFavorites(String userId) async {
-    final doc = await _firestore
-        .collection('favorites')
-        .doc(userId)
-        .get(); //get the documnet of the current user to load their favourites
-
-    if (doc.exists) {
-      final data = doc.data()
-          as Map<String, dynamic>; //convert json from Firebase to map
-      _favoriteIds = List<String>.from(data['favoriteIds'] ?? []);
-    } else {
-      _favoriteIds = [];
-    }
-
+    _favoriteIds = await _service.getFavorites(userId);
     notifyListeners();
   }
 
   Future<void> toggleFavorite(String userId, String modelId) async {
     if (isFavorite(modelId)) {
-      await _service
-          .removeFavorite(modelId); //if already a favourite, remove the heart
+      await _service.removeFavorite(userId, modelId);
+      _favoriteIds.remove(modelId);
     } else {
-      await _service.addFavourite(userId,
-          modelId); //add the model id to the favourites if it is not a favourite already
-
+      await _service.addFavorite(userId, modelId);
       _favoriteIds.add(modelId);
     }
+    notifyListeners();
+  }
 
+  void clear() {
+    _favoriteIds = [];
     notifyListeners();
   }
 }
