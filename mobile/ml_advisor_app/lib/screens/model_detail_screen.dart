@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../utils/app_theme.dart';
 import 'comparison_screen.dart';
+import '../providers/model_provider.dart';
 
 class ModelDetailScreen extends StatelessWidget {
   final MlModel model;
