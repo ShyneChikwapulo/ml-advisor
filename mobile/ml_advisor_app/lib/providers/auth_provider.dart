@@ -1,40 +1,33 @@
-//ChangeNotifier notifies other widgets/screens of the change in data. It basically tells the UI when data changes
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
 
-class AuthDataProvider extends ChangeNotifier {
-  User? _user;
+class AuthProvider extends ChangeNotifier {
+  final AuthService _authService = AuthService();
+  UserModel? _user;
   bool _loading = false;
+  String? _error;
 
-  User? get user => _user;
+  UserModel? get user => _user;
   bool get loading => _loading;
-
-  bool get isLoggedIn =>
-      _user !=
-      null; //will return false coz at first user is not logged in tehrefore _user will store null and null is NOT not equal to null(!=null), because it is equalt to null, tehrefore returns false
-  bool get isAdmin => _user?.email == "admin@email.com";
-
-  final FirebaseAuth _authDetails = FirebaseAuth.instance;
+  String? get error => _error;
+  bool get isLoggedIn => _user != null;
+  bool get isAdmin => _user?.isAdmin ?? false;
 
   Future<void> init() async {
-    //checks if someone is already logged in
-    //initializes something when the app satrts
-    _user = _authDetails.currentUser;
-    notifyListeners(); //tell flutter to update the UI because something has changed
+    _user = await _authService.getCurrentUser();
+    notifyListeners();
   }
 
   Future<bool> login(String email, String password) async {
     _loading = true;
+    _error = null;
     notifyListeners();
-
     try {
-      final result = await _authDetails.signInWithEmailAndPassword(
-          email: email, password: password);
-
-      _user = result.user;
+      _user = await _authService.login(email, password);
       return true;
     } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
       return false;
     } finally {
       _loading = false;
@@ -45,18 +38,14 @@ class AuthDataProvider extends ChangeNotifier {
   Future<bool> register(
       String email, String password, String name, String role) async {
     _loading = true;
+    _error = null;
     notifyListeners();
-
     try {
-      final result = await _authDetails.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      _user = result.user;
-
+      _user = await _authService.register(
+          email: email, password: password, displayName: name, role: role);
       return true;
     } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
       return false;
     } finally {
       _loading = false;
@@ -65,7 +54,7 @@ class AuthDataProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _authDetails.signOut();
+    await _authService.logout();
     _user = null;
     notifyListeners();
   }
