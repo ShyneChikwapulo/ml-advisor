@@ -14,45 +14,63 @@ class AuthService {
     required String displayName,
     required String role,
   }) async {
-    final cred = await _auth.createUserWithEmailAndPassword(
-        email: email, password: password);
-    
-    await cred.user!.updateDisplayName(displayName);
-    
-    final user = UserModel(
-      uid: cred.user!.uid,
-      email: email,
-      displayName: displayName,
-      role: role,
-    );
-    
-    await _db.collection('users').doc(cred.user!.uid).set({
-      'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName,
-      'role': user.role,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    
-    return user;
+    try {
+      print("STEP 1: Creating auth user");
+
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Don't touch cred.user — get currentUser directly instead
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User creation failed');
+
+      print("STEP 2: Auth created ${user.uid}");
+
+      // Update display name via currentUser, not the credential
+      await user.updateDisplayName(displayName);
+      await user.reload(); // force refresh
+
+      print("STEP 3: Saving Firestore user");
+
+      await _db.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': email,
+        'displayName': displayName,
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      print("STEP 4: Firestore save success");
+
+      return UserModel(
+        uid: user.uid,
+        email: email,
+        displayName: displayName,
+        role: role,
+      );
+    } catch (e) {
+      print("REGISTER ERROR: $e");
+      rethrow;
+    }
   }
 
   Future<UserModel> login(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(
-        email: email, password: password);
-    
-    // Don't use the credential directly — get current user after sign in
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+
     final user = _auth.currentUser;
     if (user == null) throw Exception('Login failed');
-    
+
     try {
       final doc = await _db.collection('users').doc(user.uid).get();
       if (doc.exists && doc.data() != null) {
-        return UserModel.fromJson({'id': user.uid, ...doc.data()!});
+        return UserModel.fromJson({'uid': user.uid, ...doc.data()!});
       }
-    } catch (_) {}
-    
-    // Fallback if Firestore doc doesn't exist yet
+    } catch (e) {
+      print(e);
+    }
+
     return UserModel(
       uid: user.uid,
       email: user.email ?? email,
@@ -66,14 +84,16 @@ class AuthService {
   Future<UserModel?> getCurrentUser() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    
+
     try {
       final doc = await _db.collection('users').doc(user.uid).get();
       if (doc.exists && doc.data() != null) {
         return UserModel.fromJson({'uid': user.uid, ...doc.data()!});
       }
-    } catch (_) {}
-    
+    } catch (e) {
+      print(e);
+    }
+
     return UserModel(
       uid: user.uid,
       email: user.email ?? '',
