@@ -1,32 +1,26 @@
-class GlossaryModel {
-  final String glossID;
+class GlossaryTerm {
+  final String id;
   final String term;
   final String definition;
   final String category;
 
-  GlossaryModel({
-    required this.glossID,
+  GlossaryTerm({
+    required this.id,
     required this.term,
     required this.definition,
     required this.category,
   });
 
-  factory GlossaryModel.fromJson(Map<String, dynamic> jsonData) {
-    //Map<String, dynamic> jsonData, basically means it will get a map of type json from our database
-    return GlossaryModel(
-      glossID: jsonData['glossID'],
-      term: jsonData['term'],
-      definition: jsonData['definition'],
-      category: jsonData['category'],
-    );
-  }
+  factory GlossaryTerm.fromJson(Map<String, dynamic> json) => GlossaryTerm(
+        id: json['id'] ?? '',
+        term: json['term'] ?? '',
+        definition: json['definition'] ?? '',
+        category: json['category'] ?? 'General',
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'glossID': glossID,
-      'term': term,
-      'definition': definition,
-      'category': category,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'term': term,
+        'definition': definition,
+        'category': category,
+      };
 }
