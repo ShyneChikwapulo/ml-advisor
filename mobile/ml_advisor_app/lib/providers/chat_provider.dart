@@ -7,7 +7,6 @@ class ChatMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
-
   ChatMessage({required this.text, required this.isUser})
       : timestamp = DateTime.now();
 }
@@ -25,17 +24,14 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await http
-          .post(
-            Uri.parse('${AppConstants.baseUrl}/chat'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'message': text}),
-          )
-          .timeout(const Duration(seconds: 60));
+      final response = await http.post(
+        Uri.parse('${AppConstants.baseUrl}/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': text}),
+      ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         _messages.add(ChatMessage(
           text: data['response'] ?? 'No response received.',
           isUser: false,
@@ -48,12 +44,17 @@ class ChatProvider extends ChangeNotifier {
       }
     } catch (e) {
       _messages.add(ChatMessage(
-        text: 'Error: Failed to connect. Please try again.',
+        text: 'Connection error. Please check that the backend and Ollama are running.',
         isUser: false,
       ));
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  void clearChat() {
+    _messages.clear();
+    notifyListeners();
   }
 }
