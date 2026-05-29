@@ -1,8 +1,9 @@
-class Constants {
-  static const String base_url_android = "http://10.0.2.2:8000";
-  //const String? base_url_ios = "http: //10.0.2.2: 8000";
-  static const String app_name = "ml-advisor";
-  static const String user_role_admin = "admin";
-  static const String user_role_student = "student";
-  static const String user_role_developer = "developer";
+class AppConstants {
+  static const String baseUrl = 'http://10.0.2.2:8000'; // Android emulator
+  // static const String baseUrl = 'http://localhost:8000'; // iOS simulator
+  
+  static const String appName = 'ML Advisor';
+  static const String adminRole = 'admin';
+  static const String studentRole = 'student';
+  static const String developerRole = 'developer';
 }
