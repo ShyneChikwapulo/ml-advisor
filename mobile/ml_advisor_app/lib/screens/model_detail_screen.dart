@@ -100,7 +100,7 @@ class ModelDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.compare_arrows),
                 label: const Text('Add to Comparison'),
                 onPressed: () {
-                  context.read<ModelProvider>().toggleComparison(model);
+                  context.read<ModelDataProvider>().toggleComparison(model);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('${model.name} added to comparison')),
                   );
