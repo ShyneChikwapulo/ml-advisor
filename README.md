@@ -247,9 +247,9 @@ venv\Scripts\activate
 ```bash
 source venv/bin/activate
 ```
-5.You should now see (venv) at the beginning of your terminal line
+5. You should now see (venv) at the beginning of your terminal line
 
-6.Install all required packages:
+6. Install all required packages:
 ```bash
 pip install -r requirements.txt
 ```
@@ -264,3 +264,28 @@ uvicorn main:app --reload
 Uvicorn running on http://127.0.0.1:8000
 ```
 Leave this terminal running
+
+---
+### Step 8: Set Up the Frontend (Flutter)
+
+**Instructions:**
+
+1. Open a NEW terminal
+
+2. Navigate to the Flutter app directory:
+
+```bash
+cd ml-advisor/mobile/ml_advisor_app
+```
+3. Get all dependencies:
+```bash
+flutter pub get
+```
+4. Wait for packages to download (2–3 minutes)
+5. Make sure your Android emulator is running (or your phone is connected via USB)
+6. Run the app:
+```Bash
+flutter run
+```
+7. Wait for the app to build (first run may take 3–5 minutes)
+8. The app should appear on your emulator or physical device
