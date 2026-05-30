@@ -50,6 +50,11 @@ class ModelProvider extends ChangeNotifier {
     await loadModels();
   }
 
+  Future<void> updateModel(String id, MlModel     model) async {
+    await _service.updateModel(id, model);
+    await loadModels();  // Refresh the list
+  }
+
   // Built-in fallback data
   static final List<MlModel> _defaultModels = [
     MlModel(
