@@ -181,7 +181,9 @@ Python 3.12.x
 
 After extracting, you should see a folder named something like:
 ML-Advisor
+
 ---
+
 ### Step 6: Install Ollama (For AI Chat)
 
 **What it does:** Ollama runs the AI model locally on your computer for the AI Chat feature.
@@ -223,7 +225,9 @@ Important Notes
 - The download may take 5–10 minutes
 - The model size is approximately 4 GB
 - Make sure you have a stable internet connection
+
 ---
+
 ### Step 7: Set Up the Backend (FastAPI)
 
 **What it does:** The brain of the app — handles recommendations, model data, API endpoints, and backend logic.
