@@ -16,8 +16,6 @@ import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 
-
-
 // Public mixin so reveal_drawer.dart can call navigateTo
 mixin HomeNavigator on State<HomeScreen> {
   void navigateToTab(int index);
@@ -25,8 +23,6 @@ mixin HomeNavigator on State<HomeScreen> {
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
-
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -50,11 +46,8 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-
     final screens = [
       const _DashboardTab(),
       const ModelLibraryScreen(),
@@ -71,8 +64,10 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
           onDestinationSelected: (i) => setState(() => _currentIndex = i),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.psychology), label: 'Models'),
-            NavigationDestination(icon: Icon(Icons.lightbulb), label: 'Recommend'),
+            NavigationDestination(
+                icon: Icon(Icons.psychology), label: 'Models'),
+            NavigationDestination(
+                icon: Icon(Icons.lightbulb), label: 'Recommend'),
             NavigationDestination(icon: Icon(Icons.chat), label: 'AI Chat'),
             NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
           ],
@@ -80,8 +75,6 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
       ),
     );
   }
-
-
 }
 
 // ── DASHBOARD TAB ───────────────────────────────────────────────────────────
@@ -91,6 +84,7 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    debugPrint('HOME ROLE: ${auth.user?.role}');
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -126,8 +120,7 @@ class _DashboardTab extends StatelessWidget {
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(72, 12, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(72, 12, 20, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -180,8 +173,8 @@ class _DashboardTab extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 // Quick access grid
                 const Text('Quick Access',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 GridView.count(
                   crossAxisCount: 2,
@@ -228,8 +221,7 @@ class _DashboardTab extends StatelessWidget {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) =>
-                                const ResearchGlossaryScreen()),
+                            builder: (_) => const ResearchGlossaryScreen()),
                       ),
                     ),
                   ],
@@ -238,8 +230,8 @@ class _DashboardTab extends StatelessWidget {
 
                 // Research info card
                 const Text('About the Dataset',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(18),
@@ -262,8 +254,7 @@ class _DashboardTab extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color:
-                                  AppTheme.primary.withOpacity(0.1),
+                              color: AppTheme.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.article,
@@ -274,8 +265,7 @@ class _DashboardTab extends StatelessWidget {
                             child: Text(
                               'Albattah & Alzahrani (2024)',
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14),
+                                  fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           ),
                         ],
@@ -290,18 +280,11 @@ class _DashboardTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceAround,
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _StatChip(
-                              label: '8 Models',
-                              icon: Icons.psychology),
-                          _StatChip(
-                              label: '47K Samples',
-                              icon: Icons.dataset),
-                          _StatChip(
-                              label: '60 Metrics',
-                              icon: Icons.analytics),
+                          _StatChip(label: '8 Models', icon: Icons.psychology),
+                          _StatChip(label: '47K Samples', icon: Icons.dataset),
+                          _StatChip(label: '60 Metrics', icon: Icons.analytics),
                         ],
                       ),
                     ],
@@ -435,9 +418,7 @@ class _QuickCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(label,
                 style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
+                    color: color, fontWeight: FontWeight.bold, fontSize: 13)),
           ],
         ),
       ),

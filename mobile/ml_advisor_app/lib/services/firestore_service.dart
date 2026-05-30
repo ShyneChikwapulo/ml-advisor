@@ -45,6 +45,7 @@ class FirestoreService {
         .where('userId', isEqualTo: userId)
         .where('modelId', isEqualTo: modelId)
         .get();
+
     for (final doc in snap.docs) {
       await doc.reference.delete();
     }
@@ -64,6 +65,16 @@ class FirestoreService {
   Future<void> deletePaper(String id) =>
       _db.collection('papers').doc(id).delete();
 
+  // Add after deletePaper
+  Future<void> updatePaper(String id, PaperModel paper) async {
+    await _db.collection('papers').doc(id).update(paper.toJson());
+  }
+
+  // Add after deleteGlossaryTerm
+  Future<void> updateGlossaryTerm(String id, GlossaryTerm term) async {
+    await _db.collection('glossary').doc(id).update(term.toJson());
+  }
+
   // ── Glossary ─────────────────────────────────────────────
   Future<List<GlossaryTerm>> getGlossary() async {
     final snap = await _db.collection('glossary').get();
@@ -81,11 +92,12 @@ class FirestoreService {
   // ── Analytics ────────────────────────────────────────────
   Future<Map<String, int>> getAnalytics() async {
     final results = await Future.wait([
-      _db.collection('models').count().get(),
-      _db.collection('papers').count().get(),
-      _db.collection('glossary').count().get(),
-      _db.collection('users').count().get(),
+      _db.collection('models').get(),
+      _db.collection('papers').get(),
+      _db.collection('glossary').get(),
+      _db.collection('users').get(),
     ]);
+
     return {
       'models': results[0].docs.length,
       'papers': results[1].docs.length,

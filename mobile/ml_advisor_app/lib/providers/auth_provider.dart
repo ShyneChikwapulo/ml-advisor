@@ -43,6 +43,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       _user = await _authService.register(
           email: email, password: password, displayName: name, role: role);
+      _user = await _authService.getCurrentUser();
+      debugPrint('REGISTERED ROLE: ${_user?.role}');
       return true;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');

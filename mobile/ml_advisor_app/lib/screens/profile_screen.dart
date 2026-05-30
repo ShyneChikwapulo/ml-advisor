@@ -12,6 +12,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    debugPrint('PROFILE ROLE: ${auth.user?.role}');
     final user = auth.user;
 
     return Scaffold(
