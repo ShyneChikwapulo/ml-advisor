@@ -87,10 +87,10 @@ class FirestoreService {
       _db.collection('users').count().get(),
     ]);
     return {
-      'models': results[0].count ?? 0,
-      'papers': results[1].count ?? 0,
-      'glossary': results[2].count ?? 0,
-      'users': results[3].count ?? 0,
+      'models': results[0].docs.length,
+      'papers': results[1].docs.length,
+      'glossary': results[2].docs.length,
+      'users': results[3].docs.length,
     };
   }
 }
