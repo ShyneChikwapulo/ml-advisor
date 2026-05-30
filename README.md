@@ -75,6 +75,7 @@ flutter doctor --android-licenses
 ```
 
 Press "y" and Enter for each prompt.
+
 ---
 
 ### Step 2: Install Android Studio (For Emulator)
