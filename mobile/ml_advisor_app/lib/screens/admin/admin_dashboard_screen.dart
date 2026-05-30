@@ -109,7 +109,7 @@ class _StatCard extends StatelessWidget {
       );
 }
 
-// ── Models Tab ──────────────────────────────────────────────────────────────
+// ── Models Tab (FIX 3: Add Model + Edit Model) ─────────────────────────────
 class _ModelsTab extends StatefulWidget {
   const _ModelsTab();
   @override
@@ -120,45 +120,246 @@ class _ModelsTabState extends State<_ModelsTab> {
   final _service = FirestoreService();
   late Future<List<MlModel>> _future;
 
+  // Controllers for Add/Edit forms
+  final _nameCtrl = TextEditingController();
+  final _accuracyCtrl = TextEditingController();
+  final _f1Ctrl = TextEditingController();
+  final _precisionCtrl = TextEditingController();
+  final _recallCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  String _category = 'Ensemble';
+  bool _handlesImbalance = false;
+  bool _interpretable = false;
+
   @override
   void initState() {
     super.initState();
-    _future = _service.getModels();
+    _refresh();
+  }
+
+  void _refresh() {
+    setState(() {
+      _future = _service.getModels();
+    });
+  }
+
+  void _showAddDialog() {
+    _nameCtrl.clear();
+    _accuracyCtrl.clear();
+    _f1Ctrl.clear();
+    _precisionCtrl.clear();
+    _recallCtrl.clear();
+    _descCtrl.clear();
+    _category = 'Ensemble';
+    _handlesImbalance = false;
+    _interpretable = false;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add New Model'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: _accuracyCtrl, decoration: const InputDecoration(labelText: 'Accuracy'), keyboardType: TextInputType.number),
+              TextField(controller: _f1Ctrl, decoration: const InputDecoration(labelText: 'F1-Score'), keyboardType: TextInputType.number),
+              TextField(controller: _precisionCtrl, decoration: const InputDecoration(labelText: 'Precision'), keyboardType: TextInputType.number),
+              TextField(controller: _recallCtrl, decoration: const InputDecoration(labelText: 'Recall'), keyboardType: TextInputType.number),
+              TextField(controller: _descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: const [
+                  DropdownMenuItem(value: 'Ensemble', child: Text('Ensemble')),
+                  DropdownMenuItem(value: 'Traditional', child: Text('Traditional')),
+                  DropdownMenuItem(value: 'Deep Learning', child: Text('Deep Learning')),
+                ],
+                onChanged: (v) => setState(() => _category = v!),
+              ),
+              SwitchListTile(
+                title: const Text('Handles Imbalance'),
+                value: _handlesImbalance,
+                onChanged: (v) => setState(() => _handlesImbalance = v),
+              ),
+              SwitchListTile(
+                title: const Text('Interpretable'),
+                value: _interpretable,
+                onChanged: (v) => setState(() => _interpretable = v),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (_nameCtrl.text.isEmpty) return;
+              final newModel = MlModel(
+                id: '',
+                name: _nameCtrl.text,
+                accuracy: double.tryParse(_accuracyCtrl.text) ?? 0.0,
+                f1Score: double.tryParse(_f1Ctrl.text) ?? 0.0,
+                precision: double.tryParse(_precisionCtrl.text) ?? 0.0,
+                recall: double.tryParse(_recallCtrl.text) ?? 0.0,
+                description: _descCtrl.text,
+                strengths: [],
+                weaknesses: [],
+                bestUseCases: [],
+                category: _category,
+                handlesImbalance: _handlesImbalance,
+                interpretable: _interpretable,
+              );
+              await _service.addModel(newModel);
+              if (mounted) {
+                Navigator.pop(context);
+                _refresh();
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(MlModel model) {
+    _nameCtrl.text = model.name;
+    _accuracyCtrl.text = model.accuracy.toString();
+    _f1Ctrl.text = model.f1Score.toString();
+    _precisionCtrl.text = model.precision.toString();
+    _recallCtrl.text = model.recall.toString();
+    _descCtrl.text = model.description;
+    _category = model.category;
+    _handlesImbalance = model.handlesImbalance;
+    _interpretable = model.interpretable;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Edit ${model.name}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: _accuracyCtrl, decoration: const InputDecoration(labelText: 'Accuracy'), keyboardType: TextInputType.number),
+              TextField(controller: _f1Ctrl, decoration: const InputDecoration(labelText: 'F1-Score'), keyboardType: TextInputType.number),
+              TextField(controller: _precisionCtrl, decoration: const InputDecoration(labelText: 'Precision'), keyboardType: TextInputType.number),
+              TextField(controller: _recallCtrl, decoration: const InputDecoration(labelText: 'Recall'), keyboardType: TextInputType.number),
+              TextField(controller: _descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: const [
+                  DropdownMenuItem(value: 'Ensemble', child: Text('Ensemble')),
+                  DropdownMenuItem(value: 'Traditional', child: Text('Traditional')),
+                  DropdownMenuItem(value: 'Deep Learning', child: Text('Deep Learning')),
+                ],
+                onChanged: (v) => setState(() => _category = v!),
+              ),
+              SwitchListTile(
+                title: const Text('Handles Imbalance'),
+                value: _handlesImbalance,
+                onChanged: (v) => setState(() => _handlesImbalance = v),
+              ),
+              SwitchListTile(
+                title: const Text('Interpretable'),
+                value: _interpretable,
+                onChanged: (v) => setState(() => _interpretable = v),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final updatedModel = MlModel(
+                id: model.id,
+                name: _nameCtrl.text,
+                accuracy: double.tryParse(_accuracyCtrl.text) ?? model.accuracy,
+                f1Score: double.tryParse(_f1Ctrl.text) ?? model.f1Score,
+                precision: double.tryParse(_precisionCtrl.text) ?? model.precision,
+                recall: double.tryParse(_recallCtrl.text) ?? model.recall,
+                description: _descCtrl.text,
+                strengths: model.strengths,
+                weaknesses: model.weaknesses,
+                bestUseCases: model.bestUseCases,
+                category: _category,
+                handlesImbalance: _handlesImbalance,
+                interpretable: _interpretable,
+              );
+              await _service.updateModel(model.id, updatedModel);
+              if (mounted) {
+                Navigator.pop(context);
+                _refresh();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<MlModel>>(
-      future: _future,
-      builder: (_, snap) {
-        final models = snap.data ?? [];
-        return ListView.builder(
+    return Column(
+      children: [
+        Padding(
           padding: const EdgeInsets.all(8),
-          itemCount: models.length,
-          itemBuilder: (_, i) {
-            final m = models[i];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Acc: ${(m.accuracy * 100).toStringAsFixed(0)}% · ${m.category}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await _service.deleteModel(m.id);
-                    setState(() => _future = _service.getModels());
-                  },
-                ),
-              ),
-            );
-          },
-        );
-      },
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add Model'),
+            onPressed: _showAddDialog,
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<MlModel>>(
+            future: _future,
+            builder: (_, snap) {
+              final models = snap.data ?? [];
+              return ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: models.length,
+                itemBuilder: (_, i) {
+                  final m = models[i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    child: ListTile(
+                      title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('Acc: ${(m.accuracy * 100).toStringAsFixed(0)}% · ${m.category}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showEditDialog(m),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await _service.deleteModel(m.id);
+                              _refresh();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ── Papers Tab ──────────────────────────────────────────────────────────────
+// ── Papers Tab (FIX 4: Add Edit Dialog) ────────────────────────────────────
 class _PapersTab extends StatefulWidget {
   const _PapersTab();
   @override
@@ -179,7 +380,18 @@ class _PapersTabState extends State<_PapersTab> {
     _future = _service.getPapers();
   }
 
+  void _refresh() {
+    setState(() {
+      _future = _service.getPapers();
+    });
+  }
+
   void _showAddDialog() {
+    _titleCtrl.clear();
+    _authorsCtrl.clear();
+    _yearCtrl.clear();
+    _findingsCtrl.clear();
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -209,10 +421,56 @@ class _PapersTabState extends State<_PapersTab> {
               ));
               if (mounted) {
                 Navigator.pop(context);
-                setState(() => _future = _service.getPapers());
+                _refresh();
               }
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(PaperModel paper) {
+    _titleCtrl.text = paper.title;
+    _authorsCtrl.text = paper.authors;
+    _yearCtrl.text = paper.year.toString();
+    _findingsCtrl.text = paper.keyFindings;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Research Paper'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: _titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
+              TextField(controller: _authorsCtrl, decoration: const InputDecoration(labelText: 'Authors')),
+              TextField(controller: _yearCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Year')),
+              TextField(controller: _findingsCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Key Findings')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final updatedPaper = PaperModel(
+                id: paper.id,
+                title: _titleCtrl.text,
+                authors: _authorsCtrl.text,
+                year: int.tryParse(_yearCtrl.text) ?? paper.year,
+                keyFindings: _findingsCtrl.text,
+                modelsEvaluated: paper.modelsEvaluated,
+              );
+              await _service.updatePaper(paper.id, updatedPaper);
+              if (mounted) {
+                Navigator.pop(context);
+                _refresh();
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -246,12 +504,21 @@ class _PapersTabState extends State<_PapersTab> {
                     child: ListTile(
                       title: Text(p.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       subtitle: Text('${p.authors} · ${p.year}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          await _service.deletePaper(p.id);
-                          setState(() => _future = _service.getPapers());
-                        },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showEditDialog(p),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await _service.deletePaper(p.id);
+                              _refresh();
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -265,7 +532,7 @@ class _PapersTabState extends State<_PapersTab> {
   }
 }
 
-// ── Glossary Tab ─────────────────────────────────────────────────────────────
+// ── Glossary Tab (FIX 5: Add Edit Dialog) ──────────────────────────────────
 class _GlossaryTab extends StatefulWidget {
   const _GlossaryTab();
   @override
@@ -285,7 +552,17 @@ class _GlossaryTabState extends State<_GlossaryTab> {
     _future = _service.getGlossary();
   }
 
+  void _refresh() {
+    setState(() {
+      _future = _service.getGlossary();
+    });
+  }
+
   void _showAddDialog() {
+    _termCtrl.clear();
+    _defCtrl.clear();
+    _catCtrl.clear();
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -310,10 +587,50 @@ class _GlossaryTabState extends State<_GlossaryTab> {
               ));
               if (mounted) {
                 Navigator.pop(context);
-                setState(() => _future = _service.getGlossary());
+                _refresh();
               }
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(GlossaryTerm term) {
+    _termCtrl.text = term.term;
+    _defCtrl.text = term.definition;
+    _catCtrl.text = term.category;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Glossary Term'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: _termCtrl, decoration: const InputDecoration(labelText: 'Term')),
+            TextField(controller: _defCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Definition')),
+            TextField(controller: _catCtrl, decoration: const InputDecoration(labelText: 'Category')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final updatedTerm = GlossaryTerm(
+                id: term.id,
+                term: _termCtrl.text,
+                definition: _defCtrl.text,
+                category: _catCtrl.text,
+              );
+              await _service.updateGlossaryTerm(term.id, updatedTerm);
+              if (mounted) {
+                Navigator.pop(context);
+                _refresh();
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -347,12 +664,21 @@ class _GlossaryTabState extends State<_GlossaryTab> {
                     child: ListTile(
                       title: Text(t.term, style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text(t.definition, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          await _service.deleteGlossaryTerm(t.id);
-                          setState(() => _future = _service.getGlossary());
-                        },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showEditDialog(t),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await _service.deleteGlossaryTerm(t.id);
+                              _refresh();
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   );
