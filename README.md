@@ -298,3 +298,13 @@ flutter run
 ```
 7. Wait for the app to build (first run may take 3–5 minutes)
 8. The app should appear on your emulator or physical device
+
+---
+
+**You need 3 terminal windows open:**
+
+| Terminal | What to Type | What It Does |
+|----------|--------------|--------------|
+| **Terminal 1** | `ollama serve` | Starts the AI chat |
+| **Terminal 2** | `cd ml-advisor/backend` then `source venv/bin/activate` (or `venv\Scripts\activate` on Windows) then `uvicorn main:app --reload` | Starts the backend server |
+| **Terminal 3** | `cd ml-advisor/mobile/ml_advisor_app` then `flutter run` | Starts the mobile app |
