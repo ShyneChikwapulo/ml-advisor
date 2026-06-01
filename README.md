@@ -6,6 +6,38 @@
 
 ---
 
+### The Git Rebase Disaster That Broke the Main Branch
+
+"Our biggest disaster wasn't a code error - it was a Git mistake that completely broke our main branch.
+
+Someone accidentally committed the `serviceAccountKey.json` file to our repository. This file contains private Firebase credentials. It's like posting your database password on GitHub for anyone to see. We needed to remove it from the commit history completely, not just delete the file.
+
+We decided to use `git rebase` to rewrite our commit history and remove the file. This was our fatal mistake. None of us really understood how rebase works.
+
+We ran the rebase command directly on the main branch. Within minutes, our main branch was completely broken. Commits were out of order. Some commits disappeared entirely. Others duplicated. The app wouldn't even run anymore.
+
+Then I made things worse. I had a feature branch with new code that was working fine. I thought, let me merge this feature branch into main to fix things. But main was already broken. When I merged, the broken history from main got mixed into my feature branch. Now both branches were corrupted.
+
+We were stuck. The app was broken on every branch. We couldn't run it. We couldn't easily undo the rebase because we had rewritten history.
+
+Here's how we eventually fixed it:
+
+First, we stopped working entirely and assessed the damage. One team member had an old local copy of the main branch from before the rebase. That copy saved us.
+
+Second, we created a new branch from that old local copy. We manually re-applied the code changes that were lost, about two days of work.
+
+Third, we generated a new service account key in Firebase and revoked the old one. This made the exposed key useless.
+
+Fourth, we added `serviceAccountKey.json` to `.gitignore` so it would never be committed again.
+
+Finally, we force-pushed our clean branch to GitHub as the new main branch. Everyone deleted their local copies and cloned fresh.
+
+What did we learn? First, never run `git rebase` on a shared branch like main. Second, always add sensitive files to `.gitignore` before committing. Third, if you commit a secret, revoke it immediately. Fourth, local backups save lives. If we didn't have that old local copy, we would have lost weeks of work.
+
+This took us two days to fix. It was stressful and frustrating. But we learned more about Git in those two days than in the entire course."
+
+---
+
 ### Firebase Analytics Bug
 
 "The first major bug was in the admin analytics. When we first implemented the stats dashboard, the app crashed every time an admin tried to view it. The error said something about `docs not defined` on an `AggregateQuerySnapshot`.
