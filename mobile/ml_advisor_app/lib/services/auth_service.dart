@@ -101,8 +101,30 @@ class AuthService {
     return UserModel.fromJson(doc.data()!);
   }
 
-  Future<void> initializePasswordResetSequence(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+  // ── RECOVERY & VERIFICATION ORCHESTRATION ───────────────────────────────
+  Future<void> initializePasswordResetSequence({
+    required String target, 
+    required bool isPhoneFlow,
+    required Function(String verificationId) onCodeSent,
+    required Function(FirebaseAuthException e) onVerificationFailed,
+  }) async {
+    if (!isPhoneFlow) {
+      // Standard Email Link Pipeline
+      await _auth.sendPasswordResetEmail(email: target);
+    } else {
+      // Native Firebase Phone Verification/MFA Pipeline
+      await _auth.verifyPhoneNumber(
+        phoneNumber: target,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Optional: Auto-signing in or resolving if instant verification occurs
+        },
+        verificationFailed: onVerificationFailed,
+        codeSent: (String verificationId, int? resendToken) {
+          onCodeSent(verificationId);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+      );
+    }
   }
 
   Future<void> logout() async {

@@ -4,9 +4,11 @@ import 'dart:ui' as ui;
 import '../utils/app_theme.dart';
 
 class FluidTabBar extends StatefulWidget {
+  final int currentTab; // ⚡ ADDED: Tracks active global tab map index
   final Function(int)? onTabChanged;
 
-  const FluidTabBar({super.key, this.onTabChanged});
+  // Pass it directly into your class constructor constructor
+  const FluidTabBar({super.key, required this.currentTab, this.onTabChanged});
 
   @override
   _FluidTabBarState createState() => _FluidTabBarState();
@@ -32,8 +34,11 @@ class _FluidTabBarState extends State<FluidTabBar> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    // Initialize our local index tracking with whatever value was passed down
+    selectedIndex = widget.currentTab;
+
     _dentController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 650),
       vsync: this,
     );
     _dentAnimation = CurvedAnimation(
@@ -42,7 +47,7 @@ class _FluidTabBarState extends State<FluidTabBar> with TickerProviderStateMixin
     );
 
     _circleController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 450),
       vsync: this,
     );
     _circleJumpAnimation = CurvedAnimation(
@@ -53,8 +58,36 @@ class _FluidTabBarState extends State<FluidTabBar> with TickerProviderStateMixin
     _dentController.value = 1.0;
   }
 
+
+  // ⚡ ADDED: This intercepts external index shifts (like from the drawer)
+  @override
+  void didUpdateWidget(covariant FluidTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentTab != oldWidget.currentTab) {
+      _triggerExternalTabShift(widget.currentTab);
+    }
+  }
+
+  // ⚡ ADDED: Handles triggering the fluid wave safely from external updates
+  void _triggerExternalTabShift(int targetIndex) {
+    if (targetIndex == selectedIndex) return;
+
+    setState(() {
+      previousIndex = selectedIndex;
+      selectedIndex = targetIndex;
+    });
+
+    _circleController.forward(from: 0);
+    _dentController.reset();
+    
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (mounted) _dentController.forward();
+    });
+  }
+
   void _onTabTapped(int index) {
     if (index == selectedIndex) return;
+    widget.onTabChanged?.call(index);
 
     setState(() {
       previousIndex = selectedIndex;
@@ -64,7 +97,7 @@ class _FluidTabBarState extends State<FluidTabBar> with TickerProviderStateMixin
     _circleController.forward(from: 0);
     
     _dentController.reset();
-    Future.delayed(const Duration(milliseconds: 150), () {
+    Future.delayed(const Duration(milliseconds: 220), () {
       if (mounted) _dentController.forward();
     });
 
@@ -88,46 +121,50 @@ class _FluidTabBarState extends State<FluidTabBar> with TickerProviderStateMixin
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // --- GLASSMORPHISM BACKDROP BLUR & LAYER LAYER ---
-              AnimatedBuilder(
-                animation: Listenable.merge([_dentAnimation, _circleJumpAnimation]),
-                builder: (context, child) {
-                  return Stack(
-                    children: [
-                      // 1. Live blur background restricted perfectly to our fluid cutout path
-                      ClipPath(
-                        clipper: FluidTabClipper(
-                          tabCount: icons.length,
-                          selectedIndex: selectedIndex,
-                          dentProgress: _dentAnimation.value,
-                          tabWidth: tabWidth,
-                          baselineY: baselineY,
-                        ),
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
-                          child: SizedBox(
-                            width: width,
-                            height: totalHeight,
+              // --- OPTIMIZED GLASSMORPHISM VIA REPAINT BOUNDARY ---
+              RepaintBoundary( // ⚡ ISO-LAYER SHIELD: Prevents full-screen layout thrashing
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([_dentAnimation, _circleJumpAnimation]),
+                  builder: (context, child) {
+                    return Stack(
+                      children: [
+                        // 1. Live blur background restricted perfectly to our fluid cutout path
+                        ClipPath(
+                          clipper: FluidTabClipper(
+                            tabCount: icons.length,
+                            selectedIndex: selectedIndex,
+                            dentProgress: _dentAnimation.value,
+                            tabWidth: tabWidth,
+                            baselineY: baselineY,
+                          ),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0), // Dropped slightly from 16 to maximize framerate
+                            child: SizedBox(
+                              width: width,
+                              height: totalHeight,
+                            ),
                           ),
                         ),
-                      ),
-                      // 2. Custom Painter handling Shadows, Frosted Fills, and Borders
-                      CustomPaint(
-                        size: Size(width, totalHeight),
-                        painter: FluidTabPainter(
-                          tabCount: icons.length,
-                          selectedIndex: selectedIndex,
-                          previousIndex: previousIndex,
-                          dentProgress: _dentAnimation.value,
-                          circleProgress: _circleJumpAnimation.value,
-                          tabWidth: tabWidth,
-                          baselineY: baselineY,
+                        // 2. Custom Painter handling Shadows, Frosted Fills, and Borders
+                        CustomPaint(
+                          size: Size(width, totalHeight),
+                          painter: FluidTabPainter(
+                            tabCount: icons.length,
+                            selectedIndex: selectedIndex,
+                            previousIndex: previousIndex,
+                            dentProgress: _dentAnimation.value,
+                            circleProgress: _circleJumpAnimation.value,
+                            tabWidth: tabWidth,
+                            baselineY: baselineY,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
+
+              // Icons & Labels container stays outside the RepaintBoundary...
 
               // Icons & Labels
               Positioned(

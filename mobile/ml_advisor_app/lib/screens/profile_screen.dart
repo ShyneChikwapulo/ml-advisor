@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../utils/app_theme.dart';
 import 'admin/admin_dashboard_screen.dart';
+import 'contact_support_screen.dart';
 
 // Unified Theme Tokens Shared across Components
 const Color _goldAccent = Color(0xFFD4AF37);
@@ -489,8 +490,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _buildSettingsTile(
                             icon: Icons.help_outline_rounded,
                             title: 'Contact and Support Matrix',
-                            trailing: const Text('[Adding Page Later]', style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
-                            onTap: () => _triggerStubNotification('Support matrix pipeline routing active soon.'),
+                            // trailing: const Text('[Adding Page Later]', style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
+                            onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ContactSupportScreen(currentUser: user),
+                                  ),
+                                );
+                              },
                           ),
                           const Divider(height: 1, color: Colors.white10),
                           _buildSettingsTile(

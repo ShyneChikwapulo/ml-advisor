@@ -156,163 +156,167 @@ class RevealDrawerState extends State<RevealDrawer>
 }
 
 // ── MENU PANEL ─────────────────────────────────────────────────────────────
-// Replace the entire _MenuPanel class with this:
 class _MenuPanel extends StatelessWidget {
   const _MenuPanel();
+
+  // Helper mapping helper method to extract assets dynamically
+  String _getAvatarPath(int? index) {
+    if (index == null || index < 0 || index > 10) return 'assets/images/avatars/avatar1.png';
+    return 'assets/images/avatars/avatar${index + 1}.png';
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D2137), Color(0xFF1565C0)],
+    // Wrap the top level in a Material widget to wipe out the yellow underline bug!
+    return Material(
+      color: Colors.transparent, // Preserves your custom gradient backgrounds below
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D2137), Color(0xFF1565C0)],
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
 
-              // Profile section
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: Colors.white.withOpacity(0.3), width: 1.5),
-                    ),
-                    child: Center(
-                      child: Text(
-                        (user?.displayName != null && user!.displayName!.trim().isNotEmpty 
-                            ? user!.displayName!.trim()[0] 
-                            : 'U').toUpperCase(),
-                          style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                // Profile section with Dynamic Avatar Image Asset
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withOpacity(0.2), // Optional signature gold ring
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37).withOpacity(0.4), 
+                          width: 1,
                         ),
                       ),
+                      child: CircleAvatar(
+                        radius: 26, // Perfect 52px total scale height bounding box
+                        backgroundColor: Colors.white10,
+                        backgroundImage: AssetImage(_getAvatarPath(user?.avatarIndex)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.displayName ?? 'User',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName ?? 'User',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          user?.role == 'admin'
-                              ? 'Administrator'
-                              : user?.role == 'developer'
-                                  ? 'Developer'
-                                  : 'University Student',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 12,
+                          const SizedBox(height: 2),
+                          Text(
+                            user?.role == 'admin'
+                                ? 'Administrator'
+                                : user?.role == 'developer'
+                                    ? 'Developer'
+                                    : 'University Student',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Menu items — these change the bottom nav index
-              _MenuItem(
-                icon: Icons.home_outlined,
-                label: 'Home',
-                onTap: () {
-                  RevealDrawer.of(context).close();
-                  context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(0);
-                },
-              ),
-              _MenuItem(
-                icon: Icons.psychology_outlined,
-                label: 'Model Library',
-                onTap: () {
-                  RevealDrawer.of(context).close();
-                  context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(1);
-                },
-              ),
-              _MenuItem(
-                icon: Icons.lightbulb_outline,
-                label: 'Get Recommendation',
-                onTap: () {
-                  RevealDrawer.of(context).close();
-                  context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(2);
-                },
-              ),
-              _MenuItem(
-                icon: Icons.chat_bubble_outline,
-                label: 'AI Chat',
-                onTap: () {
-                  RevealDrawer.of(context).close();
-                  context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(3);
-                },
-              ),
-              _MenuItem(
-                icon: Icons.person_outline,
-                label: 'Profile',
-                onTap: () {
-                  RevealDrawer.of(context).close();
-                  context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(4);
-                },
-              ),
-              if (auth.isAdmin)
+                // Menu items — these change the bottom nav index
                 _MenuItem(
-                  icon: Icons.admin_panel_settings_outlined,
-                  label: 'Admin Dashboard',
+                  icon: Icons.home_outlined,
+                  label: 'Home',
                   onTap: () {
                     RevealDrawer.of(context).close();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AdminDashboardScreen()),
-                    );
+                    context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(0);
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.psychology_outlined,
+                  label: 'Model Library',
+                  onTap: () {
+                    RevealDrawer.of(context).close();
+                    context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(1);
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.lightbulb_outline,
+                  label: 'Recommendations',
+                  onTap: () {
+                    RevealDrawer.of(context).close();
+                    context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(2);
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.chat_bubble_outline,
+                  label: 'AI Chat',
+                  onTap: () {
+                    RevealDrawer.of(context).close();
+                    context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(3);
+                  },
+                ),
+                _MenuItem(
+                  icon: Icons.person_outline,
+                  label: 'Profile',
+                  onTap: () {
+                    RevealDrawer.of(context).close();
+                    context.findAncestorStateOfType<HomeNavigator>()?.navigateToTab(4);
+                  },
+                ),
+                if (auth.isAdmin)
+                  _MenuItem(
+                    icon: Icons.admin_panel_settings_outlined,
+                    label: 'Admin Dashboard',
+                    onTap: () {
+                      RevealDrawer.of(context).close();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminDashboardScreen()),
+                      );
+                    },
+                  ),
+
+                const Spacer(),
+
+                const SizedBox(height: 8),
+
+                _MenuItem(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  color: Colors.redAccent.shade100,
+                  onTap: () async {
+                    context.read<FavoritesProvider>().clear();
+                    await context.read<AuthProvider>().logout();
                   },
                 ),
 
-              const Spacer(),
-
-              // Divider(color: Colors.white.withOpacity(0.15)),
-              const SizedBox(height: 8),
-
-              _MenuItem(
-                icon: Icons.logout,
-                label: 'Logout',
-                color: Colors.redAccent.shade100,
-                onTap: () async {
-                  context.read<FavoritesProvider>().clear();
-                  await context.read<AuthProvider>().logout();
-                },
-              ),
-
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),

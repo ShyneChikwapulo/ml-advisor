@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 
+
 const Color _goldAccent = Color(0xFFD4AF37);
 const Color _matteBlackCanvas = Color(0xFF121212);
 
@@ -106,14 +107,173 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
   }
 
   void _handleForgotPassword() {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty) {
-      _showFeedbackSnackBar('Please enter your email address to reset your password.', isError: true);
+    final emailInput = _emailCtrl.text.trim();
+    
+    // Quick validation check before opening the sheet
+    if (emailInput.isEmpty) {
+      _showFeedbackSnackBar('Please enter your email address in the input field first.', isError: true);
       return;
     }
-    _showFeedbackSnackBar('Reset code sent successfully!', isError: false);
+
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(emailInput)) {
+      _showFeedbackSnackBar('Please enter a valid email address.', isError: true);
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161616),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Pull Handler bar
+              Center(
+                child: Container(
+                  width: 38, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'PASSWORD RECOVERY',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Confirm your account recovery destination',
+                style: TextStyle(fontSize: 15, color: Colors.white70),
+              ),
+              const SizedBox(height: 24),
+
+              // Focused Email Recovery Card
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(context); // Close the bottom sheet
+                  
+                  final auth = context.read<AuthProvider>();
+                  bool success = await auth.sendPasswordRecovery(
+                    target: emailInput, 
+                    isPhoneFlow: false,
+                  );
+                  
+                  if (success && mounted) {
+                    _showFeedbackSnackBar(
+                      'Reset link transmitted successfully! Check your inbox or spam.', 
+                      isError: false,
+                    );
+                  } else if (mounted) {
+                    _showFeedbackSnackBar(auth.error ?? 'Email recovery failed.', isError: true);
+                  }
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _goldAccent.withOpacity(0.05),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _goldAccent.withOpacity(0.15)),
+                        ),
+                        child: const Icon(Icons.alternate_email_rounded, color: _goldAccent, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Send Recovery Link', 
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Dispatches a secure reset link to $emailInput', 
+                              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, color: _goldAccent.withOpacity(0.6), size: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
+  // UI Helper Widget for the Selection Items
+  Widget _buildRecoveryOptionTile({
+    required IconData icon, 
+    required String title, 
+    required String subtitle, 
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _goldAccent.withOpacity(0.05),
+                shape: BoxShape.circle,
+                border: Border.all(color: _goldAccent.withOpacity(0.15)),
+              ),
+              child: Icon(icon, color: _goldAccent, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 3),
+                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.25), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+// ── FEEDBACK SNACKBAR BUILDER ──
   void _showFeedbackSnackBar(String msg, {required bool isError}) {
 
     // 🌟 FIX 2: Flush out any existing or queued snackbars instantly

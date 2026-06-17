@@ -553,6 +553,12 @@ class _ModelsTabState extends State<_ModelsTab> {
   final _precisionCtrl = TextEditingController();
   final _recallCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+
+  // Add these new list data text routing handles
+  final _strengthsCtrl = TextEditingController();
+  final _weaknessesCtrl = TextEditingController();
+  final _useCasesCtrl = TextEditingController();
+
   String _category = 'Ensemble';
   bool _handlesImbalance = false;
   bool _interpretable = false;
@@ -582,9 +588,15 @@ class _ModelsTabState extends State<_ModelsTab> {
       _category = existingModel.category;
       _handlesImbalance = existingModel.handlesImbalance;
       _interpretable = existingModel.interpretable;
+      
+      // Map Lists to Comma-Separated Strings for editing
+      _strengthsCtrl.text = existingModel.strengths.join(', ');
+      _weaknessesCtrl.text = existingModel.weaknesses.join(', ');
+      _useCasesCtrl.text = existingModel.bestUseCases.join(', ');
     } else {
       _nameCtrl.clear(); _accuracyCtrl.clear(); _f1Ctrl.clear();
       _precisionCtrl.clear(); _recallCtrl.clear(); _descCtrl.clear();
+      _strengthsCtrl.clear(); _weaknessesCtrl.clear(); _useCasesCtrl.clear();
       _category = 'Ensemble'; _handlesImbalance = false; _interpretable = false;
     }
 
@@ -621,6 +633,30 @@ class _ModelsTabState extends State<_ModelsTab> {
                   ),
                   const SizedBox(height: 14),
                   TextField(controller: _descCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Technical Overview Summary')),
+                  
+                  const SizedBox(height: 14),
+                  // ── NEW INPUTS: STRINGS TO LIST PARSING ENGINE ──
+                  TextField(
+                    controller: _strengthsCtrl, 
+                    maxLines: 2,
+                    style: const TextStyle(color: Colors.white), 
+                    decoration: _FormInputDecoration.build(labelText: 'Empirical Strengths (Comma Separated)'),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _weaknessesCtrl, 
+                    maxLines: 2,
+                    style: const TextStyle(color: Colors.white), 
+                    decoration: _FormInputDecoration.build(labelText: 'Operational Limitations (Comma Separated)'),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _useCasesCtrl, 
+                    maxLines: 2,
+                    style: const TextStyle(color: Colors.white), 
+                    decoration: _FormInputDecoration.build(labelText: 'Target Deployments / Use Cases (Comma Separated)'),
+                  ),
+                  
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
                     value: _category,
@@ -657,6 +693,13 @@ class _ModelsTabState extends State<_ModelsTab> {
               style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.goldAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: () async {
                 if (_nameCtrl.text.isEmpty) return;
+
+                // Helper utility expression to turn plain text back into clean arrays
+                List<String> parseCommaString(String input) {
+                  if (input.trim().isEmpty) return [];
+                  return input.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+                }
+
                 final modelObj = MlModel(
                   id: isEdit ? existingModel.id : '',
                   name: _nameCtrl.text,
@@ -665,14 +708,14 @@ class _ModelsTabState extends State<_ModelsTab> {
                   precision: double.tryParse(_precisionCtrl.text) ?? 0.0,
                   recall: double.tryParse(_recallCtrl.text) ?? 0.0,
                   description: _descCtrl.text,
-                  strengths: isEdit ? existingModel.strengths : [],
-                  weaknesses: isEdit ? existingModel.weaknesses : [],
-                  bestUseCases: isEdit ? existingModel.bestUseCases : [],
                   category: _category,
                   handlesImbalance: _handlesImbalance,
                   interpretable: _interpretable,
+                  // Map the split string logic safely to parameters
+                  strengths: parseCommaString(_strengthsCtrl.text),
+                  weaknesses: parseCommaString(_weaknessesCtrl.text),
+                  bestUseCases: parseCommaString(_useCasesCtrl.text),
                 );
-
 
                 if (isEdit) {
                   await _service.updateModel(existingModel.id, modelObj);
@@ -683,7 +726,7 @@ class _ModelsTabState extends State<_ModelsTab> {
                 if (mounted) {
                   Navigator.pop(context);
                   _refresh();
-                  widget.onRefreshMetrics(); // 👈 Add this line
+                  widget.onRefreshMetrics(); 
                 }
               },
               child: Text(isEdit ? 'Save Changes' : 'Push Node', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),

@@ -88,4 +88,40 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+  Future<bool> sendPasswordRecovery({
+      required String target,
+      required bool isPhoneFlow,
+      Function(String vid)? onSmsSent,
+    }) async {
+      _loading = true;
+      _error = null;
+      notifyListeners();
+      try {
+        await _authService.initializePasswordResetSequence(
+          target: target,
+          isPhoneFlow: isPhoneFlow,
+          onCodeSent: (verificationId) {
+            _loading = false;
+            notifyListeners();
+            if (onSmsSent != null) onSmsSent(verificationId);
+          },
+          onVerificationFailed: (e) {
+            _error = e.message;
+            _loading = false;
+            notifyListeners();
+          },
+        );
+        if (!isPhoneFlow) {
+          _loading = false;
+          notifyListeners();
+        }
+        return true;
+      } catch (e) {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false;
+        notifyListeners();
+        return false;
+      }
+    }
 }

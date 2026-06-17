@@ -82,15 +82,12 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
           ],
         ),
         bottomNavigationBar: FluidTabBar(
+          currentTab: _currentIndex,
           onTabChanged: (index) {
             setState(() {
               _currentIndex = index;
             });
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
+            _pageController.jumpToPage(index);
           },
         ),
       ),
@@ -104,6 +101,12 @@ class DashboardTab extends StatelessWidget {
 
   // Custom local Gold accent color definition for easy manual tweaking
   static const Color goldAccent = Color(0xFFD4AF37); 
+
+  // 🛠️ ADDED: Maps the current index safely to the correct local directory link
+  String _getAvatarPath(int? index) {
+    if (index == null || index < 0 || index > 10) return 'assets/images/avatars/avatar1.png';
+    return 'assets/images/avatars/avatar${index + 1}.png';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,39 +151,65 @@ class DashboardTab extends StatelessWidget {
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(72, 12, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          'Welcome back,',
-                          style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13),
-                        ),
-                        Text(
-                          auth.user?.displayName ?? 'User',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
+                        // ── Left Column: Welcome Metadata Text ──
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Welcome back,',
+                                style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13),
+                              ),
+                              Text(
+                                auth.user?.displayName ?? 'User',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24, // Slightly scaled down from 26 to fit layout cleanly
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withOpacity(0.15)),
+                                ),
+                                child: Text(
+                                  (auth.user?.role ?? 'student').toUpperCase(),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        
+                        // ── Right Column: Dynamic System Avatar Node ──
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          margin: const EdgeInsets.only(bottom: 2), // Aligns perfectly along baseline bounds
+                          padding: const EdgeInsets.all(2.5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withOpacity(0.15)),
+                            color: goldAccent.withOpacity(0.2), 
+                            shape: BoxShape.circle,
+                            border: Border.all(color: goldAccent.withOpacity(0.4), width: 1),
                           ),
-                          child: Text(
-                            (auth.user?.role ?? 'student').toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
+                          child: CircleAvatar(
+                            radius: 26, // Gives a clean, polished 52px top-bar footprint
+                            backgroundColor: Colors.white10,
+                            backgroundImage: AssetImage(_getAvatarPath(auth.user?.avatarIndex)),
                           ),
                         ),
                       ],
