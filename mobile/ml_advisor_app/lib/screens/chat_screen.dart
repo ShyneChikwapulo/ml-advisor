@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
+import '../providers/auth_provider.dart'; // 🔥 FIXED: Added dependency import
 import '../utils/app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -18,7 +20,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _ctrl.text.trim();
     if (text.isEmpty) return;
     _ctrl.clear();
-    context.read<ChatProvider>().sendMessage(text).then((_) {
+    
+    // 🔥 FIXED: Intercept active context session before dispatching call
+    final auth = context.read<AuthProvider>();
+    final userId = auth.user?.uid ?? "anonymous_session";
+
+    context.read<ChatProvider>().sendMessage(text, userId).then((_) {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollCtrl.hasClients) {
           _scrollCtrl.animateTo(
@@ -38,141 +45,168 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  // Luxury UI Palette Cohesion Constants
+  static const Color goldAccent = Color(0xFFD4AF37);
+  static const Color matteBlackCanvas = Color(0xFF121212);
+
   @override
   Widget build(BuildContext context) {
     final chat = context.watch<ChatProvider>();
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    const double navBarHeight = 65.0; 
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('AI Advisor Chat'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => context.read<ChatProvider>().clearChat(),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Info banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            color: AppTheme.primary.withOpacity(0.08),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: AppTheme.primary),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Powered by Ollama + RAG knowledge base (26 research papers)',
-                    style: TextStyle(fontSize: 12, color: AppTheme.primary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Messages
-          Expanded(
-            child: chat.messages.isEmpty
-                ? const _EmptyChat()
-                : ListView.builder(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: chat.messages.length + (chat.loading ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (i == chat.messages.length) {
-                        return const _TypingIndicator();
-                      }
-                      final msg = chat.messages[i];
-                      return _MessageBubble(message: msg);
-                    },
-                  ),
-          ),
-          // Input
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2))
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    onSubmitted: (_) => _send(),
-                    decoration: InputDecoration(
-                      hintText: 'Ask about ML models for bug prediction...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: AppTheme.background,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                    ),
-                    maxLines: null,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: AppTheme.primary,
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                    onPressed: chat.loading ? null : _send,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyChat extends StatelessWidget {
-  const _EmptyChat();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      backgroundColor: matteBlackCanvas,
+      body: SafeArea(
+        bottom: false,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text('Ask the AI Advisor',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              'Ask questions about ML models for software bug prediction. The AI uses research paper data to answer.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondary),
+            // ── PREMIUM INTEGRATED TITLE HEADER WITH TRASH ACTION ───────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'COGNITIVE RAG INTERACTION',
+                        style: TextStyle(
+                          color: goldAccent.withOpacity(0.85),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'AI Advisor Chat',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_sweep_outlined, color: Colors.white60, size: 24),
+                    onPressed: () => context.read<ChatProvider>().clearChat(),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                'Which model has the highest accuracy?',
-                'When should I use Random Forest?',
-                'What is class imbalance?',
-                'Compare LSTM vs XGBoost',
-              ]
-                  .map((q) => ActionChip(
-                        label: Text(q, style: const TextStyle(fontSize: 12)),
-                        onPressed: () => context.read<ChatProvider>().sendMessage(q),
-                      ))
-                  .toList(),
+
+            // ── MODERN GLASSMORPHIC KNOWLEDGE BASE TELEMETRY BANNER ─────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.accent.withOpacity(0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.hub_outlined, size: 16, color: AppTheme.accent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Powered by Ollama + RAG Engine (26 verified research frameworks)',
+                          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), letterSpacing: 0.2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── MAIN INTERACTIVE MESSAGE CHANNELS TERMINAL ──────────────────────
+            Expanded(
+              child: chat.messages.isEmpty
+                  ? const _EmptyChat()
+                  : ListView.builder(
+                      controller: _scrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      itemCount: chat.messages.length + (chat.loading ? 1 : 0),
+                      itemBuilder: (_, i) {
+                        if (i == chat.messages.length) {
+                          return const _TypingIndicator();
+                        }
+                        final msg = chat.messages[i];
+                        return _MessageBubble(message: msg);
+                      },
+                    ),
+            ),
+            
+            // ── SEAMLESS OVERLAY PILL INPUT SHELF VIA BLUFFER TERMINAL ──────────
+            Container(
+              padding: EdgeInsets.only(
+                left: 14,
+                right: 14,
+                top: 10,
+                bottom: bottomPadding > 0 ? bottomPadding : 16,
+              ),
+              color: Colors.transparent, 
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _ctrl,
+                        onSubmitted: (_) => _send(),
+                        style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                        cursorColor: AppTheme.primary,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          hintText: 'Ask about empirical bug structures...',
+                          hintStyle: TextStyle(color: Colors.black.withOpacity(0.4), fontSize: 13),
+                          filled: false, 
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: chat.loading ? null : _send,
+                    child: Container(
+                      height: 46,
+                      width: 46,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.accent],
+                        ),
+                      ),
+                      child: const Icon(Icons.bolt, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -181,6 +215,82 @@ class _EmptyChat extends StatelessWidget {
   }
 }
 
+// ── CUSTOM RECONFIGURED GLASS EMPTY STATE VIEW ──────────────────────────────
+class _EmptyChat extends StatelessWidget {
+  const _EmptyChat();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.02),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.06)),
+              ),
+              child: const Icon(Icons.terminal_outlined, size: 48, color: AppTheme.accent),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Awaiting Telemetry Query',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Query across historical matrix targets. Answers are compiled against real system model datasets.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 32),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                'Which model has the highest accuracy?',
+                'When should I use Random Forest?',
+                'What is class imbalance?',
+                'Compare LSTM vs XGBoost',
+              ].map((q) => ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Material(
+                  color: Colors.white.withOpacity(0.03),
+                  child: InkWell(
+                    onTap: () {
+                      // 🔥 FIXED: Suggestions chips now query with current user parameters too
+                      final auth = context.read<AuthProvider>();
+                      final userId = auth.user?.uid ?? "anonymous_session";
+                      context.read<ChatProvider>().sendMessage(q, userId);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      ),
+                      child: Text(
+                        q,
+                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                ),
+              )).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── CYBERPUNK SYMMETRIC GLASSMESSAGE CARD BUBBLES ───────────────────────────
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   const _MessageBubble({required this.message});
@@ -191,27 +301,36 @@ class _MessageBubble extends StatelessWidget {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
         decoration: BoxDecoration(
-          color: isUser ? AppTheme.primary : Colors.white,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isUser ? const Radius.circular(4) : null,
-            bottomLeft: !isUser ? const Radius.circular(4) : null,
+          color: isUser 
+              ? AppTheme.primary.withOpacity(0.15) 
+              : Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
+          ),
+          border: Border.all(
+            color: isUser 
+                ? AppTheme.accent.withOpacity(0.3) 
+                : Colors.white.withOpacity(0.08),
           ),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 4,
-                offset: const Offset(0, 2))
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
           ],
         ),
         child: Text(
           message.text,
           style: TextStyle(
-            color: isUser ? Colors.white : AppTheme.textPrimary,
+            color: isUser ? Colors.white : Colors.white.withOpacity(0.9),
             fontSize: 14,
             height: 1.4,
           ),
@@ -221,6 +340,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+// ── GLASSMORPHIC PULSING PROCESSOR INDICATOR ────────────────────────────────
 class _TypingIndicator extends StatelessWidget {
   const _TypingIndicator();
 
@@ -229,30 +349,29 @@ class _TypingIndicator extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 4,
-                offset: const Offset(0, 2))
-          ],
+          color: Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(16).copyWith(bottomLeft: const Radius.circular(4)),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 40,
+            const SizedBox(
+              width: 24,
               child: LinearProgressIndicator(
                 backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation(AppTheme.primary),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accent),
+                minHeight: 2,
               ),
             ),
-            SizedBox(width: 8),
-            Text('Thinking...', style: TextStyle(color: AppTheme.textSecondary)),
+            const SizedBox(width: 12),
+            Text(
+              'Parsing knowledge network...',
+              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),

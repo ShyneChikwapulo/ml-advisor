@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/paper_model.dart';
 import '../models/glossary_model.dart';
@@ -8,31 +9,130 @@ import '../utils/app_theme.dart';
 class ResearchGlossaryScreen extends StatelessWidget {
   const ResearchGlossaryScreen({super.key});
 
+  // Luxury UI Palette Cohesion Constants
+  static const Color goldAccent = Color(0xFFD4AF37);
+  static const Color matteBlackCanvas = Color(0xFF121212);
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Research & Glossary'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.article), text: 'Research Papers'),
-              Tab(icon: Icon(Icons.menu_book), text: 'Glossary'),
+        backgroundColor: matteBlackCanvas,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── PREMIUM INTEGRATED TITLE HEADER WITH EXPLICIT BACK BUTTON ──────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 4),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'KNOWLEDGE ARCHIVES',
+                          style: TextStyle(
+                            color: goldAccent.withOpacity(0.85),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Research & Glossary',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ── AMBIENT GLASS TAB BAR DOCK ─────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Theme(
+                    data: ThemeData(
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                    ),
+                    child: TabBar(
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      indicator: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      ),
+                      labelColor: goldAccent,
+                      unselectedLabelColor: Colors.white.withOpacity(0.4),
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5),
+                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+                      tabs: const [
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.article_outlined, size: 16),
+                              SizedBox(width: 8),
+                              Text('LITERATURE'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.menu_book_outlined, size: 16),
+                              SizedBox(width: 8),
+                              Text('GLOSSARY'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── VIEWPANEL MATRIX LAYER ─────────────────────────────────────────
+              const Expanded(
+                child: TabBarView(
+                  children: [_PapersTab(), _GlossaryTab()],
+                ),
+              ),
             ],
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            indicatorColor: Colors.white,
           ),
-        ),
-        body: const TabBarView(
-          children: [_PapersTab(), _GlossaryTab()],
         ),
       ),
     );
   }
 }
 
+// ── TAB VIEW 1: LITERATURE EMPIRICAL PAPERS ─────────────────────────────────
 class _PapersTab extends StatefulWidget {
   const _PapersTab();
   @override
@@ -55,60 +155,108 @@ class _PapersTabState extends State<_PapersTab> {
       future: _future,
       builder: (_, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(AppTheme.accent)));
         }
         final papers = snap.data ?? _defaultPapers;
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
           itemCount: papers.length,
           itemBuilder: (_, i) {
             final p = papers[i];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ExpansionTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.primary.withOpacity(0.1),
-                  child: Text('${p.year}'.substring(2),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, color: AppTheme.primary)),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.01),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.04)),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                  expansionTileTheme: ExpansionTileThemeData(
+                    iconColor: ResearchGlossaryScreen.goldAccent,
+                    collapsedIconColor: Colors.white.withOpacity(0.3),
+                  ),
                 ),
-                title: Text(p.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text(p.authors,
-                    style: const TextStyle(fontSize: 11)),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Key Findings:',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(p.keyFindings,
-                            style: const TextStyle(
-                                color: AppTheme.textSecondary, height: 1.5)),
-                        if (p.modelsEvaluated.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          const Text('Models Evaluated:',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          Wrap(
-                            spacing: 6,
-                            children: p.modelsEvaluated
-                                .map((m) => Chip(
-                                      label: Text(m, style: const TextStyle(fontSize: 11)),
-                                      backgroundColor:
-                                          AppTheme.primary.withOpacity(0.1),
-                                      padding: EdgeInsets.zero,
-                                    ))
-                                .toList(),
-                          ),
-                        ],
-                      ],
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.primary.withOpacity(0.15)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '\'${'${p.year}'.substring(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accent, fontSize: 13),
+                      ),
                     ),
                   ),
-                ],
+                  title: Text(
+                    p.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13, height: 1.3),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      p.authors,
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                    ),
+                  ),
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.15),
+                        // FIXED: Wrapped integer with Radius.circular
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // FIXED: Changed to EdgeInsets.only(bottom: 12)
+                          Container(height: 1, color: Colors.white.withOpacity(0.04), margin: const EdgeInsets.only(bottom: 12)),
+                          const Text(
+                            'KEY FINDINGS DATA MATRICES',
+                            style: TextStyle(color: ResearchGlossaryScreen.goldAccent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            p.keyFindings,
+                            style: TextStyle(color: Colors.white.withOpacity(0.7), height: 1.5, fontSize: 12),
+                          ),
+                          if (p.modelsEvaluated.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            const Text(
+                              'EVALUATED ARCHITECTURES',
+                              style: TextStyle(color: AppTheme.accent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: p.modelsEvaluated
+                                  .map((m) => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.03),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                                        ),
+                                        child: Text(m, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500)),
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -145,6 +293,7 @@ class _PapersTabState extends State<_PapersTab> {
   ];
 }
 
+// ── TAB VIEW 2: GLOSSARY TERM DEFINITIONS METRIC READOUTS ───────────────────
 class _GlossaryTab extends StatefulWidget {
   const _GlossaryTab();
   @override
@@ -166,24 +315,38 @@ class _GlossaryTabState extends State<_GlossaryTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Premium Embedded Structural Search Input Field
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
           child: TextField(
             onChanged: (v) => setState(() => _search = v),
+            cursorColor: ResearchGlossaryScreen.goldAccent,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Search terms...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              hintText: 'Search matrix terms...',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 13),
+              prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.3), size: 18),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.01),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.04)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppTheme.accent.withOpacity(0.4)),
+              ),
             ),
           ),
         ),
+        
         Expanded(
           child: FutureBuilder<List<GlossaryTerm>>(
             future: _future,
             builder: (_, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(AppTheme.accent)));
               }
               final all = snap.data ?? _defaultGlossary;
               final terms = all
@@ -191,34 +354,58 @@ class _GlossaryTabState extends State<_GlossaryTab> {
                       t.term.toLowerCase().contains(_search.toLowerCase()) ||
                       t.definition.toLowerCase().contains(_search.toLowerCase()))
                   .toList();
+              
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                 itemCount: terms.length,
                 itemBuilder: (_, i) {
                   final t = terms[i];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
                     child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppTheme.secondary.withOpacity(0.15),
-                        child: Text(t.term[0].toUpperCase(),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.secondary)),
-                      ),
-                      title: Text(t.term,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(t.definition,
-                          style: const TextStyle(fontSize: 12)),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          color: AppTheme.accent.withOpacity(0.06),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.accent.withOpacity(0.15)),
                         ),
-                        child: Text(t.category,
-                            style: const TextStyle(
-                                fontSize: 10, color: AppTheme.primary)),
+                        child: Center(
+                          child: Text(
+                            t.term[0].toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        t.term,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          t.definition,
+                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, height: 1.4),
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: ResearchGlossaryScreen.goldAccent.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: ResearchGlossaryScreen.goldAccent.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          t.category.toUpperCase(),
+                          style: const TextStyle(fontSize: 8, color: ResearchGlossaryScreen.goldAccent, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
                       ),
                     ),
                   );

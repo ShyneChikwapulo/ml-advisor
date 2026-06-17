@@ -18,7 +18,8 @@ class ChatProvider extends ChangeNotifier {
   List<ChatMessage> get messages => _messages;
   bool get loading => _loading;
 
-  Future<void> sendMessage(String text) async {
+  /// ── FIXED: Added userId parameter to segment conversation threads ──
+  Future<void> sendMessage(String text, String userId) async {
     _messages.add(ChatMessage(text: text, isUser: true));
     _loading = true;
     notifyListeners();
@@ -27,7 +28,10 @@ class ChatProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${AppConstants.baseUrl}/chat'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'message': text}),
+        body: jsonEncode({
+          'message': text,
+          'user_id': userId, // 🔥 Extracted identification context passed to backend
+        }),
       ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {

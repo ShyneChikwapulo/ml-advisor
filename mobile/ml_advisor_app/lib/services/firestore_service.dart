@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/ml_model.dart';
 import '../models/paper_model.dart';
 import '../models/glossary_model.dart';
+import '../models/user_model.dart'; // 👈 ADD THIS LINE
 
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
@@ -65,14 +66,8 @@ class FirestoreService {
   Future<void> deletePaper(String id) =>
       _db.collection('papers').doc(id).delete();
 
-  // Add after deletePaper
   Future<void> updatePaper(String id, PaperModel paper) async {
     await _db.collection('papers').doc(id).update(paper.toJson());
-  }
-
-  // Add after deleteGlossaryTerm
-  Future<void> updateGlossaryTerm(String id, GlossaryTerm term) async {
-    await _db.collection('glossary').doc(id).update(term.toJson());
   }
 
   // ── Glossary ─────────────────────────────────────────────
@@ -88,6 +83,10 @@ class FirestoreService {
 
   Future<void> deleteGlossaryTerm(String id) =>
       _db.collection('glossary').doc(id).delete();
+
+  Future<void> updateGlossaryTerm(String id, GlossaryTerm term) async {
+    await _db.collection('glossary').doc(id).update(term.toJson());
+  }
 
   // ── Analytics ────────────────────────────────────────────
   Future<Map<String, int>> getAnalytics() async {
@@ -105,4 +104,33 @@ class FirestoreService {
       'users': results[3].docs.length,
     };
   }
+
+  // 🌟 NEW: Pulls chronological entries ordered by monthIndex for the multi-series line chart
+  Future<List<Map<String, dynamic>>> getHistoricalAnalytics() async {
+    final snapshot = await _db
+        .collection('analytics_history')
+        .orderBy('monthIndex')
+        .get();
+        
+    return snapshot.docs.map((doc) => doc.data()).toList();
+  }
+
+
+// ── Users ────────────────────────────────────────────────
+  Future<List<UserModel>> getUsers() async {
+    final snap = await _db.collection('users').get();
+    return snap.docs
+        .map((d) => UserModel.fromJson({'uid': d.id, ...d.data()}))
+        .toList();
+  }
+
+  Future<void> addUser(UserModel user) =>
+     _db.collection('users').add(user.toMap());
+
+  Future<void> updateUser(String uid, UserModel user) =>
+      _db.collection('users').doc(uid).update(user.toMap());
+
+  Future<void> deleteUser(String uid) =>
+      _db.collection('users').doc(uid).delete();
+
 }

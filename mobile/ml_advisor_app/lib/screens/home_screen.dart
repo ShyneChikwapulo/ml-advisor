@@ -1,12 +1,11 @@
-// lib/screens/home_screen.dart
-// Uses the RevealDrawer for the 3D scale-down menu effect
-
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../utils/app_theme.dart';
 import '../widgets/reveal_drawer.dart';
+import '../widgets/fluid_tab_bar.dart';
 import 'model_library_screen.dart';
 import 'comparison_screen.dart';
 import 'recommendation_screen.dart';
@@ -16,7 +15,6 @@ import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 
-// Public mixin so reveal_drawer.dart can call navigateTo
 mixin HomeNavigator on State<HomeScreen> {
   void navigateToTab(int index);
 }
@@ -30,14 +28,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
   int _currentIndex = 0;
+  late PageController _pageController;
 
+  @override
   void navigateToTab(int index) {
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       if (auth.user != null) {
@@ -47,30 +55,43 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final screens = [
-      const _DashboardTab(),
-      const ModelLibraryScreen(),
-      const RecommendationScreen(),
-      const ChatScreen(),
-      const ProfileScreen(),
-    ];
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return RevealDrawer(
       child: Scaffold(
-        body: screens[_currentIndex],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-            NavigationDestination(
-                icon: Icon(Icons.psychology), label: 'Models'),
-            NavigationDestination(
-                icon: Icon(Icons.lightbulb), label: 'Recommend'),
-            NavigationDestination(icon: Icon(Icons.chat), label: 'AI Chat'),
-            NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+        extendBody: true, 
+        backgroundColor: const Color(0xFF121212), // Grainy Matte Black base canvas
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          children: const [
+            DashboardTab(),          
+            ModelLibraryScreen(),    
+            RecommendationScreen(),  
+            ChatScreen(),            
+            ProfileScreen(),         
           ],
+        ),
+        bottomNavigationBar: FluidTabBar(
+          onTabChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
         ),
       ),
     );
@@ -78,33 +99,36 @@ class _HomeScreenState extends State<HomeScreen> with HomeNavigator {
 }
 
 // ── DASHBOARD TAB ───────────────────────────────────────────────────────────
-class _DashboardTab extends StatelessWidget {
-  const _DashboardTab();
+class DashboardTab extends StatelessWidget {
+  const DashboardTab({super.key});
+
+  // Custom local Gold accent color definition for easy manual tweaking
+  static const Color goldAccent = Color(0xFFD4AF37); 
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    debugPrint('HOME ROLE: ${auth.user?.role}');
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: const Color(0xFF121212), // Grainy Matte Black canvas
       body: CustomScrollView(
         slivers: [
-          // ── CUSTOM APP BAR with hamburger ──────────────────────────
           SliverAppBar(
-            expandedHeight: 160,
+            expandedHeight: 170,
             pinned: true,
-            backgroundColor: AppTheme.primary,
-            leading: _HamburgerButton(),
+            backgroundColor: AppTheme.primary.withOpacity(0.9), // Reverted to theme blue background
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => RevealDrawer.of(context).toggle(),
+            ),
             actions: [
               if (auth.isAdmin)
                 IconButton(
-                  icon: const Icon(Icons.admin_panel_settings,
-                      color: Colors.white),
+                  icon: const Icon(Icons.admin_panel_settings, color: goldAccent), // Highlighted Admin icon in gold
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const AdminDashboardScreen()),
+                    MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
                   ),
                 ),
               const SizedBox(width: 8),
@@ -115,7 +139,10 @@ class _DashboardTab extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF0D2137), AppTheme.primary],
+                    colors: [
+                      Color(0xFF0D2137), // Dark Navy
+                      AppTheme.primary,  // Reverted back to App Theme Blue
+                    ],
                   ),
                 ),
                 child: SafeArea(
@@ -127,9 +154,7 @@ class _DashboardTab extends StatelessWidget {
                       children: [
                         Text(
                           'Welcome back,',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14),
+                          style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13),
                         ),
                         Text(
                           auth.user?.displayName ?? 'User',
@@ -140,21 +165,21 @@ class _DashboardTab extends StatelessWidget {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.15)),
                           ),
                           child: Text(
                             (auth.user?.role ?? 'student').toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ),
@@ -165,190 +190,186 @@ class _DashboardTab extends StatelessWidget {
               ),
             ),
           ),
-
-          // ── BODY CONTENT ────────────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Quick access grid
-                const Text('Quick Access',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                const Text(
+                  'Quick Access',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 14),
+                
+                // Grid System mapping visual context cards
                 GridView.count(
                   crossAxisCount: 2,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.3,
+                  padding: EdgeInsets.zero, // 👈 ADD THIS LINE to eliminate the hidden layout gap!
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 1.25,
                   children: [
-                    _QuickCard(
+                    QuickCard(
                       icon: Icons.psychology,
                       label: 'Browse Models',
-                      color: AppTheme.primary,
+                      imagePath: 'assets/images/browse_bg.jpg',
+                      accentColor: AppTheme.accent, // Theme Bright Cyan Blue
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const ModelLibraryScreen()),
+                        MaterialPageRoute(builder: (_) => const ModelLibraryScreen()),
                       ),
                     ),
-                    _QuickCard(
+                    QuickCard(
                       icon: Icons.compare_arrows,
                       label: 'Compare',
-                      color: AppTheme.success,
+                      imagePath: 'assets/images/compare_bg.jpg',
+                      accentColor: AppTheme.accent, // Gold Accent
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const ComparisonScreen()),
+                        MaterialPageRoute(builder: (_) => const ComparisonScreen()),
                       ),
                     ),
-                    _QuickCard(
+                    QuickCard(
                       icon: Icons.favorite,
                       label: 'Favourites',
-                      color: Colors.redAccent,
+                      imagePath: 'assets/images/favorites_bg.jpg',
+                      accentColor: AppTheme.accent, // Soft Magenta-Pink Pop
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const FavoritesScreen()),
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen()),
                       ),
                     ),
-                    _QuickCard(
+                    QuickCard(
                       icon: Icons.menu_book,
                       label: 'Research',
-                      color: AppTheme.warning,
+                      imagePath: 'assets/images/research_bg.jpg',
+                      accentColor: AppTheme.accent, // Gold Accent
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const ResearchGlossaryScreen()),
+                        MaterialPageRoute(builder: (_) => const ResearchGlossaryScreen()),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                // Research info card
-                const Text('About the Dataset',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.article,
-                                color: AppTheme.primary, size: 20),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Albattah & Alzahrani (2024)',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        '8 ML models evaluated on the Unified Bug Dataset with 47,618 classes and 60 software metrics. LSTM achieves the highest accuracy at 87%.',
-                        style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 13,
-                            height: 1.5),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _StatChip(label: '8 Models', icon: Icons.psychology),
-                          _StatChip(label: '47K Samples', icon: Icons.dataset),
-                          _StatChip(label: '60 Metrics', icon: Icons.analytics),
-                        ],
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 28),
+                const Text(
+                  'About the Dataset',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                const SizedBox(height: 24),
-
-                // Best model highlight
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0D2137), AppTheme.primary],
+                const SizedBox(height: 14),
+                
+                // Glassmorphic Dataset Panel Layout
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04), // Soft frosted sheet transparency
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.article, color: AppTheme.accent, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Albattah & Alzahrani (2024)',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
                             Text(
-                              'Top Performer',
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 12),
+                              '8 ML models evaluated on the Unified Bug Dataset with 47,618 classes and 60 software metrics. LSTM achieves the highest accuracy at 87%.',
+                              style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 13, height: 1.5),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'LSTM',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Text(
-                              '87% accuracy · F1: 0.61',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 13),
+                            const SizedBox(height: 18),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                StatChip(label: '8 Models', icon: Icons.psychology),
+                                StatChip(label: '47K Samples', icon: Icons.dataset),
+                                StatChip(label: '60 Metrics', icon: Icons.analytics),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'Deep Learning',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 20),
+                
+                // Premium Blue & Gold Top Performer Block Row
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: goldAccent.withOpacity(0.35)), // Gold Specular Border Trim
+                    ),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Top Performer',
+                                    style: TextStyle(color: goldAccent, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'LSTM',
+                                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    '87% accuracy · F1: 0.61',
+                                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+                              ),
+                              child: const Text(
+                                'Deep Learning',
+                                style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, fontSize: 11), // 👈 FIXED: Removed widgetAlignment parameter
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 120), 
               ]),
             ),
           ),
@@ -358,39 +379,20 @@ class _DashboardTab extends StatelessWidget {
   }
 }
 
-// ── HAMBURGER BUTTON ────────────────────────────────────────────────────────
-class _HamburgerButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: AnimatedIcon(
-        icon: AnimatedIcons.menu_close,
-        progress: _getDrawerAnimation(context),
-        color: Colors.white,
-        size: 26,
-      ),
-      onPressed: () => RevealDrawer.of(context).toggle(),
-    );
-  }
-
-  Animation<double> _getDrawerAnimation(BuildContext context) {
-    // Returns a dummy animation — the animated icon just shows menu icon
-    // The actual open/close state is handled by RevealDrawer
-    return const AlwaysStoppedAnimation(0);
-  }
-}
-
-// ── QUICK CARD ──────────────────────────────────────────────────────────────
-class _QuickCard extends StatelessWidget {
+// ── GLASSMORPHIC IMAGE QUICK CARD WIDGET ────────────────────────────────────
+class QuickCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final String imagePath;
+  final Color accentColor;
   final VoidCallback onTap;
 
-  const _QuickCard({
+  const QuickCard({
+    super.key,
     required this.icon,
     required this.label,
-    required this.color,
+    required this.imagePath,
+    required this.accentColor,
     required this.onTap,
   });
 
@@ -398,51 +400,117 @@ class _QuickCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Stack(
+            children: [
+              // 1. Background Context Image
+              Positioned.fill(
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                ),
               ),
-              child: Icon(icon, color: color, size: 26),
-            ),
-            const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-          ],
+              // 2. Dark Vignette Overlay Mask
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.15),
+                        Colors.black.withOpacity(0.78),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // 3. Subtle Frosted Glass Sheet Blur
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+              // 4. Content Foreground Interface Layer
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Top Accent Mini Icon Window Container
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: accentColor.withOpacity(0.35)),
+                      ),
+                      child: Icon(icon, color: accentColor, size: 22),
+                    ),
+                    // Bottom Core Label Text
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            offset: Offset(0, 1.5),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── STAT CHIP ───────────────────────────────────────────────────────────────
-class _StatChip extends StatelessWidget {
+// ── GLASSMORPHIC STAT CHIP WIDGET ───────────────────────────────────────────
+class StatChip extends StatelessWidget {
   final String label;
   final IconData icon;
-  const _StatChip({required this.label, required this.icon});
+
+  const StatChip({super.key, required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: AppTheme.primary, size: 20),
-        const SizedBox(height: 4),
-        Text(label,
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textSecondary)),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.04),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: Icon(icon, color: DashboardTab.goldAccent, size: 18), // 👈 FIXED: Removed invalid const keyword
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withOpacity(0.6),
+          ),
+        ),
       ],
     );
   }

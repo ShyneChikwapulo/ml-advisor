@@ -36,6 +36,7 @@ dependencies:
   # Utils 
   intl: ^0.19.0 
   uuid: ^4.3.3 
+  google_sign_in: ^7.2.0
  
 dev_dependencies: 
   flutter_test: 
@@ -45,4 +46,10 @@ dev_dependencies:
 flutter: 
   uses-material-design: true 
   assets: 
-    - assets/images/
+    - assets/images/browse_bg.jpg
+    - assets/images/compare_bg.jpg
+    - assets/images/favorites_bg.jpg
+    - assets/images/research_bg.jpg
+    - assets/images/avatars/
+    - assets/images/Logo/
+    - assets/images/OnBoarding.jpg
