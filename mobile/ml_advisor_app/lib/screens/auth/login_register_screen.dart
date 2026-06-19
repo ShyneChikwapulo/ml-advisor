@@ -5,7 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 
 
-const Color _goldAccent = Color(0xFFD4AF37);
+const Color _blueAccent = Color(0xFF1565C0);
 const Color _matteBlackCanvas = Color(0xFF121212);
 
 class LoginRegisterScreen extends StatefulWidget {
@@ -149,7 +149,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
               const SizedBox(height: 24),
               const Text(
                 'PASSWORD RECOVERY',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -191,11 +191,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _goldAccent.withOpacity(0.05),
+                          color: _blueAccent.withOpacity(0.05),
                           shape: BoxShape.circle,
-                          border: Border.all(color: _goldAccent.withOpacity(0.15)),
+                          border: Border.all(color: _blueAccent.withOpacity(0.15)),
                         ),
-                        child: const Icon(Icons.alternate_email_rounded, color: _goldAccent, size: 20),
+                        child: const Icon(Icons.alternate_email_rounded, color: _blueAccent, size: 20),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -214,7 +214,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, color: _goldAccent.withOpacity(0.6), size: 16),
+                      Icon(Icons.arrow_forward_ios_rounded, color: _blueAccent.withOpacity(0.6), size: 16),
                     ],
                   ),
                 ),
@@ -248,11 +248,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _goldAccent.withOpacity(0.05),
+                color: _blueAccent.withOpacity(0.05),
                 shape: BoxShape.circle,
-                border: Border.all(color: _goldAccent.withOpacity(0.15)),
+                border: Border.all(color: _blueAccent.withOpacity(0.15)),
               ),
-              child: Icon(icon, color: _goldAccent, size: 20),
+              child: Icon(icon, color: _blueAccent, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -299,7 +299,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       labelText: label,
       prefixIcon: Icon(prefix, size: 18, color: Colors.white38),
       labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-      floatingLabelStyle: const TextStyle(color: _goldAccent, fontWeight: FontWeight.bold, fontSize: 13),
+      floatingLabelStyle: const TextStyle(color: _blueAccent, fontWeight: FontWeight.bold, fontSize: 13),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -307,7 +307,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _goldAccent, width: 1.5),
+        borderSide: const BorderSide(color: _blueAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -336,13 +336,16 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+
                   // ── LOGO FRAME ─────────────────────────────────────────────
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.02),
-                        shape: BoxShape.circle,
+                        // ⚡ FIX: Swap BoxShape.circle out for a highly rounded squircle cube
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.circular(24), 
                         border: Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
                       child: Image.asset(
@@ -351,7 +354,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         width: 82,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.psychology, size: 54, color: _goldAccent);
+                          return const Icon(Icons.psychology, size: 54, color: _blueAccent);
                         },
                       ),
                     ),
@@ -360,11 +363,11 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                   const Text(
                     'WELCOME',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 2.0),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 2.0),
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'ML Advisor Platform',
+                    'ML Advisor',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
                   ),
@@ -386,7 +389,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _isLogin ? _goldAccent : Colors.transparent,
+                                color: _isLogin ? _blueAccent : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -407,7 +410,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: !_isLogin ? _goldAccent : Colors.transparent,
+                                color: !_isLogin ? _blueAccent : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -500,7 +503,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                         style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 30)),
                         child: const Text(
                           'Forgot Password?',
-                          style: TextStyle(color: _goldAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: _blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -511,16 +514,18 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen> {
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _goldAccent,
+                        backgroundColor: _blueAccent,
                         foregroundColor: _matteBlackCanvas,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
+                        // 🌟 Add this to keep the button background clean and readable while loading
+                        disabledBackgroundColor: _blueAccent.withOpacity(0.3),
                       ),
                       onPressed: auth.loading ? null : _submit,
                       child: auth.loading
                           ? const SizedBox(
                               height: 20, width: 20,
-                              child: CircularProgressIndicator(color: _matteBlackCanvas, strokeWidth: 2.5),
+                              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white), strokeWidth: 2.5),
                             )
                           : Text(
                               _isLogin ? 'LOG IN' : 'CREATE ACCOUNT',

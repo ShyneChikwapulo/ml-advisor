@@ -1,3 +1,4 @@
+import 'dart:async'; // ⚡ Import required for StreamSubscription tracking
 import 'package:flutter/material.dart';
 import '../models/ml_model.dart';
 import '../services/firestore_service.dart';
@@ -7,25 +8,51 @@ class ModelProvider extends ChangeNotifier {
   List<MlModel> _models = [];
   List<MlModel> _selected = [];
   bool _loading = false;
+  StreamSubscription? _modelsSubscription; // ⚡ Tracks the active database listener
 
   List<MlModel> get models => _models;
   List<MlModel> get selectedForComparison => _selected;
   bool get loading => _loading;
 
-  Future<void> loadModels() async {
-    _loading = true;
-    notifyListeners();
-    try {
-      _models = await _service.getModels();
-      if (_models.isEmpty) _models = _defaultModels;
-    } catch (_) {
-      _models = _defaultModels;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
+  // ⚡ Constructor: Start listening to live Firestore changes immediately
+  ModelProvider() {
+    _initModelsStream();
   }
 
+  void _initModelsStream() {
+    _loading = true;
+    // Delay slightly to prevent notifying parent widgets during their build phase
+    scheduleMicrotask(() => notifyListeners());
+
+    // Cancel any existing listener subscription gracefully before attaching a new one
+    _modelsSubscription?.cancel();
+
+    _modelsSubscription = _service.streamModels().listen(
+      (freshModels) {
+        if (freshModels.isEmpty) {
+          _models = _defaultModels;
+        } else {
+          _models = freshModels;
+        }
+        _loading = false;
+        notifyListeners(); // 🔥 This line re-renders ModelLibraryScreen automatically!
+      },
+      onError: (_) {
+        _models = _defaultModels;
+        _loading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  // Ensure active listener streams are torn down cleanly when the provider is destroyed
+  @override
+  void dispose() {
+    _modelsSubscription?.cancel();
+    super.dispose();
+  }
+
+  // ── Comparison Control Matrix ───────────────────────────
   void toggleComparison(MlModel model) {
     if (_selected.any((m) => m.id == model.id)) {
       _selected.removeWhere((m) => m.id == model.id);
@@ -40,19 +67,17 @@ class ModelProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ⚡ MUTATIONS: Simplified because the collection stream updates everything automatically!
   Future<void> addModel(MlModel model) async {
     await _service.addModel(model);
-    await loadModels();
   }
 
   Future<void> deleteModel(String id) async {
     await _service.deleteModel(id);
-    await loadModels();
   }
 
-  Future<void> updateModel(String id, MlModel     model) async {
+  Future<void> updateModel(String id, MlModel model) async {
     await _service.updateModel(id, model);
-    await loadModels();  // Refresh the list
   }
 
   // Built-in fallback data
@@ -60,6 +85,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'random_forest',
       name: 'Random Forest',
+      paperId: '', 
+      datasetUsed: 'NASA MDP / PROMISE Corpus', 
       accuracy: 0.84,
       f1Score: 0.58,
       precision: 0.62,
@@ -75,6 +102,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'xgboost',
       name: 'XGBoost',
+      paperId: '',
+      datasetUsed: 'Unified Bug Dataset',
       accuracy: 0.83,
       f1Score: 0.57,
       precision: 0.61,
@@ -90,6 +119,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'svm',
       name: 'SVM',
+      paperId: '',
+      datasetUsed: 'NASA MDP (CM1, PC1)',
       accuracy: 0.82,
       f1Score: 0.57,
       precision: 0.60,
@@ -105,6 +136,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'logistic_regression',
       name: 'Logistic Regression',
+      paperId: '',
+      datasetUsed: 'PROMISE Repository',
       accuracy: 0.82,
       f1Score: 0.56,
       precision: 0.59,
@@ -120,6 +153,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'lstm',
       name: 'LSTM',
+      paperId: '',
+      datasetUsed: 'GitHub Open Source Commits',
       accuracy: 0.87,
       f1Score: 0.61,
       precision: 0.70,
@@ -139,6 +174,8 @@ class ModelProvider extends ChangeNotifier {
       f1Score: 0.58,
       precision: 0.63,
       recall: 0.54,
+      paperId: '',
+      datasetUsed: 'AEEEM Baseline Matrix',
       description: 'Artificial Neural Network with multiple hidden layers that learns complex non-linear relationships.',
       strengths: ['Learns complex patterns', 'Flexible architecture', 'Good with large data'],
       weaknesses: ['Needs lots of data', 'Hard to interpret', 'Slow training'],
@@ -150,6 +187,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'autoencoder',
       name: 'Autoencoder',
+      paperId: '',
+      datasetUsed: 'PROMISE Repository',
       accuracy: 0.82,
       f1Score: 0.57,
       precision: 0.61,
@@ -165,6 +204,8 @@ class ModelProvider extends ChangeNotifier {
     MlModel(
       id: 'dbn',
       name: 'DBN',
+      paperId: '',
+      datasetUsed: 'NASA MDP Base',
       accuracy: 0.82,
       f1Score: 0.57,
       precision: 0.61,

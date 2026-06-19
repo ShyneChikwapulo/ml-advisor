@@ -14,10 +14,8 @@ class ComparisonScreen extends StatefulWidget {
 }
 
 class _ComparisonScreenState extends State<ComparisonScreen> {
-  // Local latch tracking whether the admin has actively deployed the matrix
   bool _showComparison = false;
 
-  // Luxury UI Palette Cohesion Constants
   static const Color goldAccent = Color(0xFFD4AF37);
   static const Color matteBlackCanvas = Color(0xFF121212);
 
@@ -27,7 +25,6 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final selected = provider.selectedForComparison;
     final all = provider.models;
 
-    // Safety fallback: if elements are cleared, automatically reset visual view mode
     final displayComparison = _showComparison && selected.isNotEmpty;
 
     return Scaffold(
@@ -37,7 +34,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── PREMIUM INTEGRATED TITLE HEADER WITH CONDITIONAL BACK NAVIGATION ──
+            // ── HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
               child: Row(
@@ -46,7 +43,6 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        // Back button acts as view-toggle if deep inside matrix evaluation
                         if (Navigator.canPop(context) || displayComparison) ...[
                           IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -67,7 +63,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                displayComparison ? 'METRIC CROSS-EVALUATION' : 'EMPIRICAL BENCHMARKS',
+                                displayComparison ? 'COMPARISON RESULTS' : 'SELECT MODELS',
                                 style: TextStyle(
                                   color: goldAccent.withOpacity(0.85),
                                   fontSize: 10,
@@ -77,7 +73,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                displayComparison ? 'Matrix Analysis' : 'Compare Models',
+                                displayComparison ? 'Model Analysis' : 'Compare Models',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 28,
@@ -94,7 +90,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                   if (selected.isNotEmpty)
                     TextButton.icon(
                       icon: const Icon(Icons.clear_all, color: goldAccent, size: 16),
-                      label: const Text('RESET', style: TextStyle(color: goldAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      label: const Text('CLEAR', style: TextStyle(color: goldAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       onPressed: () {
                         provider.clearComparison();
                         setState(() => _showComparison = false);
@@ -104,7 +100,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
               ),
             ),
 
-            // ── CONDITIONAL SUB-VIEW MANAGER ────────────────────────────────────
+            // ── BODY ──
             Expanded(
               child: !displayComparison
                   ? _SelectModelsView(models: all)
@@ -114,7 +110,6 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         ),
       ),
       
-      // ── LAUNCH COMPARISON SUB-OVERLAY SHINY BUTTON ────────────────────────
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: selected.length >= 2 && !displayComparison
           ? Container(
@@ -142,7 +137,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                 ),
                 icon: const Icon(Icons.bolt_outlined, color: Colors.white, size: 18),
                 label: Text(
-                  'LAUNCH MATRIX BENCHMARK (${selected.length})',
+                  'COMPARE SELECTED (${selected.length})',
                   style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                 ),
                 onPressed: () => setState(() => _showComparison = true),
@@ -153,7 +148,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
   }
 }
 
-// ── SUB-VIEW A: EMPIRICAL TELEMETRY MODEL MATRIX SELECTOR ─────────────────────
+// ── SELECT MODELS VIEW ──
 class _SelectModelsView extends StatelessWidget {
   final List<MlModel> models;
   const _SelectModelsView({required this.models});
@@ -181,7 +176,7 @@ class _SelectModelsView extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Select 2 to 3 architectural models to deploy inside the matrix evaluation profile ($currentCount/3 chosen).',
+                    'Select 2-3 models to compare ($currentCount/3 selected)',
                     style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), height: 1.3),
                   ),
                 ),
@@ -191,7 +186,7 @@ class _SelectModelsView extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120), // 120 padding clears the FAB overlay seamlessly
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
             itemCount: models.length,
             itemBuilder: (_, i) {
               final m = models[i];
@@ -217,7 +212,7 @@ class _SelectModelsView extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
                   ),
                   subtitle: Text(
-                    'Baseline Test Validation Yield: ${(m.accuracy * 100).toStringAsFixed(1)}%',
+                    'Accuracy: ${(m.accuracy * 100).toStringAsFixed(1)}%',
                     style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
                   ),
                   secondary: Container(
@@ -242,7 +237,7 @@ class _SelectModelsView extends StatelessWidget {
   }
 }
 
-// ── SUB-VIEW B: HIGH FIDELITY CHART DATA INTERACTION MATRIX PANEL ──────────────
+// ── COMPARISON VIEW ──
 class _ComparisonView extends StatelessWidget {
   final List<MlModel> models;
   const _ComparisonView({required this.models});
@@ -269,11 +264,11 @@ class _ComparisonView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── SECTION 1: METRICS GLASS MATRIX TABLE ─────────────────────────
+          // ── METRICS TABLE ──
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
-              'TABULAR TELEMETRY MATRIX',
+              'PERFORMANCE METRICS',
               style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
             ),
           ),
@@ -298,7 +293,7 @@ class _ComparisonView extends StatelessWidget {
                     TableRow(
                       decoration: BoxDecoration(color: Colors.white.withOpacity(0.02)),
                       children: [
-                        const _TCell('Evaluation Metric', header: true, isLabel: true),
+                        const _TCell('Metric', header: true, isLabel: true),
                         ...models.map((m) => _TCell(m.name, header: true)),
                       ],
                     ),
@@ -316,11 +311,11 @@ class _ComparisonView extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // ── SECTION 2: BAR CHART DISTRIBUTIONS OVERLAY PANEL ──────────────────
+          // ── BAR CHART ──
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
-              'DYNAMIC MULTI-VARIABLE METRIC READOUTS',
+              'VISUAL COMPARISON',
               style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
             ),
           ),
@@ -423,7 +418,7 @@ class _ComparisonView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Dynamic Legend Row Map
+                  // ── LEGEND ──
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     decoration: BoxDecoration(
@@ -465,7 +460,7 @@ class _ComparisonView extends StatelessWidget {
   }
 }
 
-// ── CUSTOMIZED TABULAR MATRIX CELL ELEMENT ────────────────────────────────────
+// ── TABLE CELL ──
 class _TCell extends StatelessWidget {
   final String text;
   final bool header;

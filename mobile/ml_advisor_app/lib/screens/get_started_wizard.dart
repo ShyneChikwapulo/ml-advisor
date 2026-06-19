@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_theme.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
-// Unified Theme Tokens Consistent Across UI Panels
-const Color _goldAccent = Color(0xFFD4AF37);
+const Color _blueAccent = Color(0xFF1565C0);
 const Color _matteBlackCanvas = Color(0xFF121212);
 
 class GetStartedWizard extends StatefulWidget {
@@ -21,13 +21,11 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
   int _currentStep = 0;
   bool _isLoading = false;
 
-  // State Collection Vectors
   int _selectedAvatarIndex = -1;
   String _selectedExperience = '';
   final List<String> _selectedInterests = [];
   bool _enableTips = true;
   
-  // Custom Developer Field Form Trackers
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _githubController = TextEditingController();
   final TextEditingController _linkedinController = TextEditingController();
@@ -59,12 +57,12 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
 
   Future<void> _saveOnboardingData() async {
     if (_selectedAvatarIndex == -1) {
-      _showWarningSnackBar('Please choose an avatar identity template.');
+      _showWarningSnackBar('Please choose an avatar.');
       _pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
       return;
     }
     if (_selectedExperience.isEmpty) {
-      _showWarningSnackBar('Please verify your ML pipeline proficiency level.');
+      _showWarningSnackBar('Please select your experience level.');
       _pageController.animateToPage(2, duration: const Duration(milliseconds: 400), curve: Curves.easeOutCubic);
       return;
     }
@@ -76,7 +74,6 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
       final String? uid = authProvider.user?.uid;
 
       if (uid != null) {
-        // ✅ UPDATED: Streaming phone, address, and extended arrays directly into the user node
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
           'avatarIndex': _selectedAvatarIndex,
           'experienceLevel': _selectedExperience,
@@ -95,17 +92,17 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
         await authProvider.refreshUserSession();
       }
     } catch (e) {
-      _showWarningSnackBar('Database sync transaction failure: $e');
+      _showWarningSnackBar('Failed to save profile: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showWarningSnackBar(String coreText) {
+  void _showWarningSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: const Color(0xFF1C1C1E),
-        content: Text(coreText, style: const TextStyle(color: _goldAccent, fontWeight: FontWeight.bold)),
+        content: Text(message, style: const TextStyle(color: _blueAccent, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -123,21 +120,18 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
 
   @override
   Widget build(BuildContext context) {
-    // Step 1 handles its own fullscreen asset presentation, other screens draw from the base canvas.
     final bool isWelcomeStep = _currentStep == 0;
 
     return Scaffold(
       backgroundColor: _matteBlackCanvas,
       body: Stack(
         children: [
-          // If we are on step 1, put the asset image in the complete background stack layer
           if (isWelcomeStep)
             Positioned.fill(
               child: Image.asset(
                 'assets/images/OnBoarding.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  // Elegant dark fallback if assets are compiling asynchronously
                   return Container(color: const Color(0xFF0A1118));
                 },
               ),
@@ -146,7 +140,6 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
           SafeArea(
             child: Column(
               children: [
-                // Top Custom Command Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
@@ -167,7 +160,7 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                         ),
                         child: Text(
                           'STEP ${_currentStep + 1} OF $_totalSteps',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: _goldAccent, fontSize: 10, letterSpacing: 1.5),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: _blueAccent, fontSize: 10, letterSpacing: 1.5),
                         ),
                       ),
                       const SizedBox(width: 48),
@@ -175,7 +168,6 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                   ),
                 ),
                 
-                // Thin Aesthetic Flow Progress Node Tracker
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 6),
                   child: ClipRRect(
@@ -183,7 +175,7 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                     child: LinearProgressIndicator(
                       value: (_currentStep + 1) / _totalSteps,
                       backgroundColor: Colors.white10,
-                      valueColor: const AlwaysStoppedAnimation<Color>(_goldAccent),
+                      valueColor: const AlwaysStoppedAnimation<Color>(_blueAccent),
                       minHeight: 2,
                     ),
                   ),
@@ -230,7 +222,6 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                   ),
                 ),
 
-                // Core Navigation Action Footer Panel
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                   child: SizedBox(
@@ -238,7 +229,7 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                     height: 54,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _goldAccent,
+                        backgroundColor: _blueAccent,
                         foregroundColor: _matteBlackCanvas,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
@@ -247,9 +238,13 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
                       child: _isLoading
                           ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: _matteBlackCanvas, strokeWidth: 2.5))
                           : Text(
-                              _currentStep == _totalSteps - 1 ? 'FINALIZE ECOSYSTEM SETUP' : 'CONTINUE SEQUENCE',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                            ),
+                                  _currentStep == 0 
+                                      ? 'GET STARTED' 
+                                      : _currentStep == _totalSteps - 1 
+                                          ? 'COMPLETE SETUP' 
+                                          : 'CONTINUE',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                                ),
                     ),
                   ),
                 ),
@@ -262,7 +257,6 @@ class _GetStartedWizardState extends State<GetStartedWizard> {
   }
 }
 
-// ── UTILITY REUSABLE FROSTED GLASS CONTAINER MOCKUP ───────────────────────
 Widget _buildFrostedGlassPanel({required Widget child, EdgeInsetsGeometry? padding}) {
   return ClipRRect(
     borderRadius: BorderRadius.circular(28),
@@ -281,7 +275,6 @@ Widget _buildFrostedGlassPanel({required Widget child, EdgeInsetsGeometry? paddi
   );
 }
 
-// ── DESIGN SHIELD: STANDARD COHESIVE INPUT STYLING MATRIX ──────────────────
 InputDecoration _buildGlassInputDecoration({required String label, IconData? prefixIcon}) {
   return InputDecoration(
     filled: true,
@@ -289,7 +282,7 @@ InputDecoration _buildGlassInputDecoration({required String label, IconData? pre
     labelText: label,
     prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18, color: Colors.white38) : null,
     labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-    floatingLabelStyle: const TextStyle(color: _goldAccent, fontWeight: FontWeight.bold, fontSize: 13),
+    floatingLabelStyle: const TextStyle(color: _blueAccent, fontWeight: FontWeight.bold, fontSize: 13),
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
@@ -297,12 +290,12 @@ InputDecoration _buildGlassInputDecoration({required String label, IconData? pre
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: _goldAccent, width: 1.5),
+      borderSide: const BorderSide(color: _blueAccent, width: 1.5),
     ),
   );
 }
 
-// ── STEP 1: WELCOME SCREEN WITH BLENDED FULL OVERLAY scrim ─────────────────
+// ── STEP 1: WELCOME ──
 class _WelcomeStep extends StatelessWidget {
   const _WelcomeStep();
 
@@ -319,9 +312,22 @@ class _WelcomeStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: _goldAccent.withOpacity(0.15), shape: BoxShape.circle),
-                  child: const Icon(Icons.analytics_rounded, size: 32, color: _goldAccent),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(24), 
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Image.asset(
+                    'assets/images/Logo/Logo.png',
+                    height: 64,
+                    width: 64,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.psychology, size: 40, color: _blueAccent);
+                    },
+                  ),
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -330,7 +336,7 @@ class _WelcomeStep extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Your empirical software engine companion. Optimize versioning and development cycles by predicting bug density metrics and model defects seamlessly.',
+                  'Your software engineering companion. Optimize development cycles by predicting bugs and model performance seamlessly.',
                   style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.65), height: 1.5),
                 ),
               ],
@@ -343,7 +349,7 @@ class _WelcomeStep extends StatelessWidget {
   }
 }
 
-// ── STEP 2: AVATAR REGISTRATION GRID SYSTEM ────────────────────────────────
+// ── STEP 2: AVATAR ──
 class _AvatarStep extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
@@ -358,9 +364,9 @@ class _AvatarStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Text('Choose Profile Matrix Identity', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('Choose Your Avatar', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 6),
-          const Text('Select an operational avatar template representing your developer node.', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          const Text('Select an avatar to represent your profile.', style: TextStyle(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 24),
           Expanded(
             child: GridView.builder(
@@ -379,10 +385,10 @@ class _AvatarStep extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      color: isSelected ? _goldAccent.withOpacity(0.05) : Colors.white.withOpacity(0.02),
+                      color: isSelected ? _blueAccent.withOpacity(0.05) : Colors.white.withOpacity(0.02),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? _goldAccent : Colors.white.withOpacity(0.06), 
+                        color: isSelected ? _blueAccent : Colors.white.withOpacity(0.06), 
                         width: isSelected ? 2.0 : 1.0
                       ),
                     ),
@@ -392,7 +398,7 @@ class _AvatarStep extends StatelessWidget {
                       child: Image.asset(
                         assetPath,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(child: Icon(Icons.person, color: isSelected ? _goldAccent : Colors.white24)),
+                        errorBuilder: (context, error, stackTrace) => Center(child: Icon(Icons.person, color: isSelected ? _blueAccent : Colors.white24)),
                       ),
                     ),
                   ),
@@ -406,7 +412,7 @@ class _AvatarStep extends StatelessWidget {
   }
 }
 
-// ── STEP 3: FIXED PREFERENCES CHIP CONTRAST STYLES ──────────────────
+// ── STEP 3: PREFERENCES ──
 class _PreferencesStep extends StatelessWidget {
   final String selectedExperience;
   final List<String> selectedInterests;
@@ -425,23 +431,21 @@ class _PreferencesStep extends StatelessWidget {
     final List<String> levels = ['Beginner', 'Intermediate', 'Advanced'];
     
     final List<String> targetInterests = [
-      'Defect Density Modeling',
+      'Defect Prediction',
       'Static Code Analysis',
-      'Cross-Project Prediction (CPDP)',
+      'Cross-Project Prediction',
       'Change-Level Defect Tracking',
-      'AST Tree-LSTM Models',
-      'Code Metric Feature Extraction',
-      'Imbalanced Dataset Sampling',
-      'Deep Learning Bug Localization',
-      'Process Metrics Evaluation',
-      'Just-In-Time (JIT) Prediction',
-      'Repository Mining (MSR)',
-      'Pre-trained Code LLMs',
-      'Precision-Recall Optimization',
-      'G-Mean Structural Metrics',
-      'Software Maintainability Index',
-      'Cross-Language Bug Mappings',
-      'Code Smells Assessment',
+      'Deep Learning',
+      'Feature Extraction',
+      'Imbalanced Data',
+      'Bug Localization',
+      'Process Metrics',
+      'Just-In-Time Prediction',
+      'Repository Mining',
+      'Pre-trained Models',
+      'Precision-Recall',
+      'Maintainability Index',
+      'Code Smells',
       'Semantic Feature Learning'
     ];
 
@@ -452,9 +456,9 @@ class _PreferencesStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Text('Configure Parameters', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('Your Preferences', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 24),
-          const Text('EXPERIENCE PIPELINE PROFICIENCY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('EXPERIENCE LEVEL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 12),
           Row(
             children: levels.map((lvl) {
@@ -465,12 +469,12 @@ class _PreferencesStep extends StatelessWidget {
                   child: ChoiceChip(
                     label: Text(lvl),
                     selected: isSelected,
-                    selectedColor: _goldAccent.withOpacity(0.15),
-                    backgroundColor: const Color(0xFF1E1E1E), // ✅ FIXED: Strong background contrast
-                    checkmarkColor: _goldAccent,
-                    side: BorderSide(color: isSelected ? _goldAccent : Colors.white.withOpacity(0.1)),
+                    selectedColor: _blueAccent.withOpacity(0.15),
+                    backgroundColor: const Color(0xFF1E1E1E),
+                    checkmarkColor: _blueAccent,
+                    side: BorderSide(color: isSelected ? _blueAccent : Colors.white.withOpacity(0.1)),
                     labelStyle: TextStyle(
-                      color: isSelected ? _goldAccent : Colors.white.withOpacity(0.8), // ✅ FIXED: Visible unselected label text
+                      color: isSelected ? _blueAccent : Colors.white.withOpacity(0.8),
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, 
                       fontSize: 12
                     ),
@@ -481,7 +485,7 @@ class _PreferencesStep extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 32),
-          const Text('BUG PREDICTION RESEARCH DOMAINS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('AREAS OF INTEREST', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8, runSpacing: 6,
@@ -490,12 +494,12 @@ class _PreferencesStep extends StatelessWidget {
               return FilterChip(
                 label: Text(interest),
                 selected: isSelected,
-                selectedColor: _goldAccent.withOpacity(0.15),
-                backgroundColor: const Color(0xFF1E1E1E), // ✅ FIXED: Strong background contrast
-                checkmarkColor: _goldAccent,
-                side: BorderSide(color: isSelected ? _goldAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+                selectedColor: _blueAccent.withOpacity(0.15),
+                backgroundColor: const Color(0xFF1E1E1E),
+                checkmarkColor: _blueAccent,
+                side: BorderSide(color: isSelected ? _blueAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
                 labelStyle: TextStyle(
-                  color: isSelected ? _goldAccent : Colors.white.withOpacity(0.8), // ✅ FIXED: Visible unselected label text
+                  color: isSelected ? _blueAccent : Colors.white.withOpacity(0.8),
                   fontSize: 11
                 ),
                 onSelected: (selected) => onInterestsChanged(interest, selected),
@@ -510,10 +514,10 @@ class _PreferencesStep extends StatelessWidget {
               border: Border.all(color: Colors.white.withOpacity(0.06))
             ),
             child: SwitchListTile(
-              title: const Text('Enable Production Guides', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-              subtitle: const Text('Inject metric deep-dives within evaluation panels.', style: TextStyle(fontSize: 11, color: Colors.white38)),
+              title: const Text('Enable Tips', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+              subtitle: const Text('Show helpful tips throughout the app.', style: TextStyle(fontSize: 11, color: Colors.white38)),
               value: enableTips,
-              activeColor: _goldAccent,
+              activeColor: _blueAccent,
               onChanged: onTipsToggle,
             ),
           ),
@@ -524,7 +528,7 @@ class _PreferencesStep extends StatelessWidget {
   }
 }
 
-// ── STEP 4: FIXED COMPILED ECOSYSTEM TOOLS CHIP CONTRAST STYLES ─────
+// ── STEP 4: DEVELOPER FIELDS ──
 class _DeveloperFieldsStep extends StatelessWidget {
   final TextEditingController bioController;
   final TextEditingController githubController;
@@ -535,17 +539,20 @@ class _DeveloperFieldsStep extends StatelessWidget {
   final void Function(String, bool) onTechStackChanged;
 
   const _DeveloperFieldsStep({
-    required this.bioController, required this.githubController, required this.linkedinController,
-    required this.phoneController, required this.addressController,
-    required this.selectedTechStack, required this.onTechStackChanged,
+    required this.bioController, 
+    required this.githubController, 
+    required this.linkedinController,
+    required this.phoneController, 
+    required this.addressController,
+    required this.selectedTechStack, 
+    required this.onTechStackChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     final List<String> typicalTools = [
       'Python', 'Java', 'C#', 'JavaScript', 'Flutter', 'React', 'PyTorch', 'TensorFlow', 'SQL',
-      'Dart', 'Scikit-Learn', 'Docker', 'FastAPI', 'Git / GitHub Actions', 'Hugging Face Transformers',
-      'Pandas / NumPy', 'SonarQube', 'Jira API', 'PostgreSQL', 'Firebase Suite', 'Kubernetes', 'ONNX Runtime', 'GraphQL'
+      'Dart', 'Scikit-Learn', 'Docker', 'FastAPI', 'Git', 'Firebase', 'PostgreSQL', 'GraphQL'
     ];
 
     return SingleChildScrollView(
@@ -555,56 +562,87 @@ class _DeveloperFieldsStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Text('Developer Matrix Spec', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('Profile Details', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 6),
-          const Text('Enrich your identity profile ecosystem mappings below.', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          const Text('Add optional information to your profile.', style: TextStyle(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 24),
           
-          Text('BIO TELEMETRY OBJECTIVE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('BIO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           TextField(
             controller: bioController,
             maxLines: 2,
             style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _buildGlassInputDecoration(label: 'Share research background or ML model objectives...'),
+            decoration: _buildGlassInputDecoration(label: 'Tell us about yourself...'),
           ),
           const SizedBox(height: 20),
 
-          Text('PHONE NUMBER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('PHONE NUMBER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          TextField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _buildGlassInputDecoration(label: 'e.g., +1 (555) 019-2831', prefixIcon: Icons.phone_iphone_rounded),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withOpacity(0.06)),
+            ),
+            child: InternationalPhoneNumberInput(
+              onInputChanged: (PhoneNumber number) {
+                phoneController.text = number.phoneNumber ?? '';
+              },
+              textFieldController: TextEditingController(
+                text: phoneController.text.isNotEmpty && phoneController.text.contains(' ') 
+                    ? phoneController.text.split(' ').last 
+                    : phoneController.text
+              ),
+              selectorConfig: const SelectorConfig(
+                selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                useEmoji: true,
+              ),
+              ignoreBlank: false,
+              autoValidateMode: AutovalidateMode.disabled,
+              selectorTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
+              textStyle: const TextStyle(color: Colors.white, fontSize: 13),
+              cursorColor: _blueAccent,
+              formatInput: true,
+              keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
+              inputDecoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF1E1E1E),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: InputBorder.none,
+                hintText: '+27 712 345 678',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
+              ),
+            ),
           ),
           const SizedBox(height: 20),
 
-          Text('PHYSICAL NODE ADDRESS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('ADDRESS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           TextField(
             controller: addressController,
             style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _buildGlassInputDecoration(label: 'e.g., Station Uplink Alpha, Suite 40B', prefixIcon: Icons.location_on_rounded),
+            decoration: _buildGlassInputDecoration(label: 'Your location', prefixIcon: Icons.location_on_rounded),
           ),
           const SizedBox(height: 20),
 
-          Text('SYSTEM ACCESS GATES (OPTIONAL)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('SOCIAL LINKS (OPTIONAL)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           TextField(
             controller: githubController,
             style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _buildGlassInputDecoration(label: 'GitHub Username Mapping', prefixIcon: Icons.code_rounded),
+            decoration: _buildGlassInputDecoration(label: 'GitHub Username', prefixIcon: Icons.code_rounded),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: linkedinController,
             style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: _buildGlassInputDecoration(label: 'LinkedIn Profile URL Hook', prefixIcon: Icons.link_rounded),
+            decoration: _buildGlassInputDecoration(label: 'LinkedIn Profile URL', prefixIcon: Icons.link_rounded),
           ),
           const SizedBox(height: 24),
 
-          Text('COMPILED ECOSYSTEM TOOLS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+          const Text('TECH STACK', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8, runSpacing: 6,
@@ -613,12 +651,12 @@ class _DeveloperFieldsStep extends StatelessWidget {
               return FilterChip(
                 label: Text(tool),
                 selected: isSelected,
-                selectedColor: _goldAccent.withOpacity(0.15),
-                backgroundColor: const Color(0xFF1E1E1E), // ✅ FIXED: Strong background contrast
-                checkmarkColor: _goldAccent,
-                side: BorderSide(color: isSelected ? _goldAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+                selectedColor: _blueAccent.withOpacity(0.15),
+                backgroundColor: const Color(0xFF1E1E1E),
+                checkmarkColor: _blueAccent,
+                side: BorderSide(color: isSelected ? _blueAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
                 labelStyle: TextStyle(
-                  color: isSelected ? _goldAccent : Colors.white.withOpacity(0.8), // ✅ FIXED: Visible unselected label text
+                  color: isSelected ? _blueAccent : Colors.white.withOpacity(0.8),
                   fontSize: 11
                 ),
                 onSelected: (selected) => onTechStackChanged(tool, selected),
@@ -632,18 +670,18 @@ class _DeveloperFieldsStep extends StatelessWidget {
   }
 }
 
-// ── STEP 5: SYSTEM ARCHITECTURE SPEC COMPONENT LIST ────────────────────────
+// ── STEP 5: FEATURES ──
 class _FeatureStep extends StatelessWidget {
   const _FeatureStep();
 
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> features = [
-      {'icon': Icons.search_rounded, 'title': 'Model Browsing', 'desc': 'Filter predictive machine learning structures based on your input parameters.'},
-      {'icon': Icons.balance_rounded, 'title': 'Side-by-Side Comparison', 'desc': 'Evaluate precision against G-Mean architectures under a unified scale.'},
-      {'icon': Icons.auto_graph_rounded, 'title': 'Smart Recommendations', 'desc': 'Get immediate optimal training pipeline suggestions matching dataset arrays.'},
-      {'icon': Icons.forum_outlined, 'title': 'Cognitive RAG AI Chat', 'desc': 'Query architectural metrics against 26 validated system research frameworks.'},
-      {'icon': Icons.dashboard_customize_outlined, 'title': 'Telemetry Dashboards', 'desc': 'Analyze operational bug-risk distributions using visual graphs.'},
+      {'icon': Icons.search_rounded, 'title': 'Model Browsing', 'desc': 'Browse all available ML models for bug prediction.'},
+      {'icon': Icons.balance_rounded, 'title': 'Side-by-Side Comparison', 'desc': 'Compare models side by side with metrics and charts.'},
+      {'icon': Icons.auto_graph_rounded, 'title': 'Smart Recommendations', 'desc': 'Get personalized model recommendations based on your project needs.'},
+      {'icon': Icons.forum_outlined, 'title': 'AI Chat', 'desc': 'Ask questions and get answers grounded in 26 research papers.'},
+      {'icon': Icons.dashboard_customize_outlined, 'title': 'Dashboards', 'desc': 'View analytics and insights about bug prediction models.'},
     ];
 
     return Padding(
@@ -652,9 +690,9 @@ class _FeatureStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Text('System Architecture', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('What You Get', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 6),
-          const Text('Ecosystem capabilities provisioned to your profile node.', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          const Text('Key features available in ML Advisor.', style: TextStyle(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 16),
           Expanded(
             child: ListView.builder(
@@ -675,8 +713,8 @@ class _FeatureStep extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: _goldAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                          child: Icon(features[i]['icon'], color: _goldAccent, size: 20),
+                          decoration: BoxDecoration(color: _blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                          child: Icon(features[i]['icon'], color: _blueAccent, size: 20),
                         ),
                         const SizedBox(width: 14),
                         Expanded(

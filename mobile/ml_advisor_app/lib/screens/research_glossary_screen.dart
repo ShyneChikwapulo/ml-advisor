@@ -9,7 +9,6 @@ import '../utils/app_theme.dart';
 class ResearchGlossaryScreen extends StatelessWidget {
   const ResearchGlossaryScreen({super.key});
 
-  // Luxury UI Palette Cohesion Constants
   static const Color goldAccent = Color(0xFFD4AF37);
   static const Color matteBlackCanvas = Color(0xFF121212);
 
@@ -24,7 +23,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── PREMIUM INTEGRATED TITLE HEADER WITH EXPLICIT BACK BUTTON ──────
+              // ── HEADER ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
                 child: Row(
@@ -38,7 +37,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'KNOWLEDGE ARCHIVES',
+                          'RESEARCH',
                           style: TextStyle(
                             color: goldAccent.withOpacity(0.85),
                             fontSize: 10,
@@ -63,7 +62,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // ── AMBIENT GLASS TAB BAR DOCK ─────────────────────────────────────
+              // ── TAB BAR ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -96,8 +95,8 @@ class ResearchGlossaryScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.article_outlined, size: 16),
-                              SizedBox(width: 8),
-                              Text('LITERATURE'),
+                              const SizedBox(width: 8),
+                              Text('PAPERS'),
                             ],
                           ),
                         ),
@@ -106,7 +105,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.menu_book_outlined, size: 16),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text('GLOSSARY'),
                             ],
                           ),
@@ -118,7 +117,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // ── VIEWPANEL MATRIX LAYER ─────────────────────────────────────────
+              // ── TAB VIEWS ──
               const Expanded(
                 child: TabBarView(
                   children: [_PapersTab(), _GlossaryTab()],
@@ -132,7 +131,7 @@ class ResearchGlossaryScreen extends StatelessWidget {
   }
 }
 
-// ── TAB VIEW 1: LITERATURE EMPIRICAL PAPERS ─────────────────────────────────
+// ── PAPERS TAB ──
 class _PapersTab extends StatefulWidget {
   const _PapersTab();
   @override
@@ -212,16 +211,14 @@ class _PapersTabState extends State<_PapersTab> {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.15),
-                        // FIXED: Wrapped integer with Radius.circular
                         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // FIXED: Changed to EdgeInsets.only(bottom: 12)
                           Container(height: 1, color: Colors.white.withOpacity(0.04), margin: const EdgeInsets.only(bottom: 12)),
                           const Text(
-                            'KEY FINDINGS DATA MATRICES',
+                            'KEY FINDINGS',
                             style: TextStyle(color: ResearchGlossaryScreen.goldAccent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                           ),
                           const SizedBox(height: 6),
@@ -232,7 +229,7 @@ class _PapersTabState extends State<_PapersTab> {
                           if (p.modelsEvaluated.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             const Text(
-                              'EVALUATED ARCHITECTURES',
+                              'MODELS EVALUATED',
                               style: TextStyle(color: AppTheme.accent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                             ),
                             const SizedBox(height: 8),
@@ -293,7 +290,7 @@ class _PapersTabState extends State<_PapersTab> {
   ];
 }
 
-// ── TAB VIEW 2: GLOSSARY TERM DEFINITIONS METRIC READOUTS ───────────────────
+// ── GLOSSARY TAB ──
 class _GlossaryTab extends StatefulWidget {
   const _GlossaryTab();
   @override
@@ -315,7 +312,7 @@ class _GlossaryTabState extends State<_GlossaryTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Premium Embedded Structural Search Input Field
+        // ── SEARCH ──
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
           child: TextField(
@@ -323,7 +320,7 @@ class _GlossaryTabState extends State<_GlossaryTab> {
             cursorColor: ResearchGlossaryScreen.goldAccent,
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Search matrix terms...',
+              hintText: 'Search terms...',
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 13),
               prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.3), size: 18),
               filled: true,

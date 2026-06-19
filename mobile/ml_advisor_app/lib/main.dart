@@ -25,7 +25,7 @@ class MLAdvisorApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
-        ChangeNotifierProvider(create: (_) => ModelProvider()..loadModels()),
+        ChangeNotifierProvider(create: (_) => ModelProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         
         ChangeNotifierProxyProvider<AuthProvider, ChatProvider>(

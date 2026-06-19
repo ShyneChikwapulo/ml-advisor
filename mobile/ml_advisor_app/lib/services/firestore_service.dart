@@ -133,4 +133,27 @@ class FirestoreService {
   Future<void> deleteUser(String uid) =>
       _db.collection('users').doc(uid).delete();
 
+      
+
+  // ── Document Reference Resolution ────────────────────────
+  Future<PaperModel?> getPaperById(String id) async {
+    if (id.isEmpty) return null;
+    try {
+      final doc = await _db.collection('papers').doc(id).get();
+      if (!doc.exists) return null;
+      return PaperModel.fromJson({'id': doc.id, ...?doc.data()});
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ── Models (Add this right below your traditional getModels function) ──
+  Stream<List<MlModel>> streamModels() {
+    return _db.collection('models').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((d) => MlModel.fromJson({'id': d.id, ...d.data()}))
+          .toList();
+    });
+  }
+
 }

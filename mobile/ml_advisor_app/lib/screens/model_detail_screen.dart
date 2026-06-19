@@ -7,12 +7,16 @@ import '../providers/favorites_provider.dart';
 import '../utils/app_theme.dart';
 import 'comparison_screen.dart';
 import '../providers/model_provider.dart';
+import '../services/firestore_service.dart';
+import '../models/paper_model.dart';
 
 class ModelDetailScreen extends StatelessWidget {
   final MlModel model;
-  const ModelDetailScreen({super.key, required this.model});
 
-  // Luxury UI Palette Cohesion Constants
+  final FirestoreService _firestoreService = FirestoreService();
+
+  ModelDetailScreen({super.key, required this.model});
+
   static const Color goldAccent = Color(0xFFD4AF37);
   static const Color matteBlackCanvas = Color(0xFF121212);
 
@@ -29,223 +33,258 @@ class ModelDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── CUSTOM HEADER WITH EXPLICIT BACK BUTTON & TELETREMY FAVORITE ──
+            // ── HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 16, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 4),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ARCHITECTURAL DOSSIER',
-                            style: TextStyle(
-                              color: goldAccent.withOpacity(0.85),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            model.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                          onPressed: () => Navigator.pop(context),
                         ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'MODEL DETAILS',
+                                style: TextStyle(
+                                  color: goldAccent.withOpacity(0.85),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                model.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isFav ? Colors.pink.withOpacity(0.08) : Colors.white.withOpacity(0.03),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isFav ? Colors.pinkAccent.withOpacity(0.3) : Colors.white.withOpacity(0.08),
                       ),
-                    ],
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        color: isFav ? Colors.pinkAccent : Colors.white60,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        if (auth.user != null) {
+                          favs.toggleFavorite(auth.user!.uid, model.id);
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
-              Container(
-                decoration: BoxDecoration(
-                  color: isFav ? Colors.pink.withOpacity(0.08) : Colors.white.withOpacity(0.03),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isFav ? Colors.pinkAccent.withOpacity(0.3) : Colors.white.withOpacity(0.08),
-                  ),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    isFav ? Icons.favorite : Icons.favorite_border,
-                    color: isFav ? Colors.pinkAccent : Colors.white60,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    if (auth.user != null) {
-                      favs.toggleFavorite(auth.user!.uid, model.id);
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
 
-        // ── SCROLLABLE ENGINE DETAILS ─────────────────────────────────────
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Performance Metrics Section Label
-                const Padding(
-                  padding: EdgeInsets.only(left: 4, bottom: 12),
-                  child: Text(
-                    'VALIDATION READOUTS',
-                    style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                  ),
-                ),
-                
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 2.1,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+            // ── SCROLLABLE CONTENT ──
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MetricCard('Accuracy', model.accuracy, AppTheme.primary),
-                    _MetricCard('F1-Score', model.f1Score, AppTheme.accent),
-                    _MetricCard('Precision', model.precision, const Color(0xFF673AB7)),
-                    _MetricCard('Recall', model.recall, goldAccent),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                _Section('Description Matrix', model.description),
-                const SizedBox(height: 24),
-
-                _ListSection('Empirical Strengths', model.strengths, Icons.verified_user_outlined, AppTheme.accent),
-                const SizedBox(height: 24),
-
-                _ListSection('Operational Limitations', model.weaknesses, Icons.gpp_bad_outlined, Colors.redAccent.withOpacity(0.8)),
-                const SizedBox(height: 24),
-
-                _ListSection('Target Deployments', model.bestUseCases, Icons.radar_outlined, goldAccent),
-                const SizedBox(height: 28),
-
-                // Structural Metadata Tags Array
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _Tag('Category: ${model.category}', AppTheme.primary),
-                    if (model.interpretable) _Tag('Interpretable Core', AppTheme.accent),
-                    if (model.handlesImbalance) _Tag('Handles Class Imbalance', goldAccent),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                // Citation Reference Node
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: goldAccent.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.menu_book_outlined, color: goldAccent, size: 18),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'EMPIRICAL BENCHMARK SOURCE',
-                                  style: TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Albattah & Alzahrani (2024) — Unified Bug Dataset, 47,618 evaluation classes.',
-                                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7), height: 1.3),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    // ── METRICS ──
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 12),
+                      child: Text(
+                        'PERFORMANCE METRICS',
+                        style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Add to Comparison Action Overlay
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [AppTheme.primary.withOpacity(0.8), AppTheme.accent.withOpacity(0.8)],
-                      ),
+                    
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: 2.1,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      children: [
+                        _MetricCard('Accuracy', model.accuracy, AppTheme.primary),
+                        _MetricCard('F1-Score', model.f1Score, AppTheme.accent),
+                        _MetricCard('Precision', model.precision, const Color(0xFF673AB7)),
+                        _MetricCard('Recall', model.recall, goldAccent),
+                      ],
                     ),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      icon: const Icon(Icons.bolt_outlined, color: Colors.white, size: 18),
-                      label: const Text(
-                        'STAGE FOR MATRIX COMPARISON',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                      ),
-                      onPressed: () {
-                        // 1. Safe state dispatch execution
-                        context.read<ModelProvider>().toggleComparison(model);
+                    const SizedBox(height: 28),
+
+                    // ── DESCRIPTION ──
+                    _Section('Description', model.description),
+                    const SizedBox(height: 24),
+
+                    // ── STRENGTHS ──
+                    if (model.strengths.isNotEmpty) ...[
+                      _ListSection('Strengths', model.strengths, Icons.check_circle_outline, AppTheme.accent),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // ── WEAKNESSES ──
+                    if (model.weaknesses.isNotEmpty) ...[
+                      _ListSection('Limitations', model.weaknesses, Icons.cancel_outlined, Colors.redAccent.withOpacity(0.8)),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // ── USE CASES ──
+                    if (model.bestUseCases.isNotEmpty) ...[
+                      _ListSection('Best Use Cases', model.bestUseCases, Icons.radar_outlined, goldAccent),
+                      const SizedBox(height: 28),
+                    ],
+
+                    // ── TAGS ──
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _Tag('Category: ${model.category}', AppTheme.primary),
+                        _Tag('Dataset: ${model.datasetUsed}', const Color(0xFF00E676)),
+                        if (model.interpretable) _Tag('Interpretable', AppTheme.accent),
+                        if (model.handlesImbalance) _Tag('Handles Imbalance', goldAccent),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+
+                    // ── CITATION ──
+                    FutureBuilder<PaperModel?>(
+                      future: _firestoreService.getPaperById(model.paperId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Container(
+                            height: 70,
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(goldAccent)),
+                          );
+                        }
+
+                        final paper = snapshot.data;
                         
-                        // 2. Safe application-wide Snackbar display call via standard context
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: const Color(0xFF1E1E1E),
-                            content: Text(
-                              '${model.name} routed to benchmark engine.',
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                        final String citationDisplay = paper != null
+                            ? '${paper.authors} (${paper.year}) — ${paper.title}'
+                            : 'Research paper not found.';
+
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.02),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withOpacity(0.06)),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: goldAccent.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.menu_book_outlined, color: goldAccent, size: 18),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'RESEARCH PAPER',
+                                          style: TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          citationDisplay,
+                                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7), height: 1.3),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
                       },
                     ),
-                  ),
+                    const SizedBox(height: 24),
+
+                    // ── COMPARE BUTTON ──
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: [AppTheme.primary.withOpacity(0.8), AppTheme.accent.withOpacity(0.8)],
+                          ),
+                        ),
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          icon: const Icon(Icons.compare_arrows_outlined, color: Colors.white, size: 18),
+                          label: const Text(
+                            'ADD TO COMPARISON',
+                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                          ),
+                          onPressed: () {
+                            context.read<ModelProvider>().toggleComparison(model);
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                content: Text(
+                                  '${model.name} added to comparison.',
+                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
   }
 }
 
-// ── TELEMETRY RING METRIC GRID COMPONENT ───────────────────────────────────────
+// ── METRIC CARD ──
 class _MetricCard extends StatelessWidget {
   final String label;
   final double value;
@@ -296,7 +335,7 @@ class _MetricCard extends StatelessWidget {
       );
 }
 
-// ── CUSTOM TEXT DESCRIPTION SECTION OVERRIDE ──────────────────────────────────
+// ── SECTION ──
 class _Section extends StatelessWidget {
   final String title, content;
   const _Section(this.title, this.content);
@@ -329,7 +368,7 @@ class _Section extends StatelessWidget {
       );
 }
 
-// ── HIGH FIDELITY RECORD LIST MATRIX BLOCK ────────────────────────────────────
+// ── LIST SECTION ──
 class _ListSection extends StatelessWidget {
   final String title;
   final List<String> items;
@@ -381,7 +420,7 @@ class _ListSection extends StatelessWidget {
       );
 }
 
-// ── CHIP TAG OVERLAYS ─────────────────────────────────────────────────────────
+// ── TAG ──
 class _Tag extends StatelessWidget {
   final String label;
   final Color color;

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
-import '../providers/auth_provider.dart'; // 🔥 FIXED: Added dependency import
+import '../providers/auth_provider.dart';
 import '../utils/app_theme.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -21,7 +22,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _ctrl.clear();
     
-    // 🔥 FIXED: Intercept active context session before dispatching call
     final auth = context.read<AuthProvider>();
     final userId = auth.user?.uid ?? "anonymous_session";
 
@@ -45,7 +45,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  // Luxury UI Palette Cohesion Constants
   static const Color goldAccent = Color(0xFFD4AF37);
   static const Color matteBlackCanvas = Color(0xFF121212);
 
@@ -53,7 +52,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final chat = context.watch<ChatProvider>();
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
-    const double navBarHeight = 65.0; 
 
     return Scaffold(
       backgroundColor: matteBlackCanvas,
@@ -62,7 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── PREMIUM INTEGRATED TITLE HEADER WITH TRASH ACTION ───────────────
+            // ── HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
               child: Row(
@@ -72,7 +70,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'COGNITIVE RAG INTERACTION',
+                        'AI ADVISOR',
                         style: TextStyle(
                           color: goldAccent.withOpacity(0.85),
                           fontSize: 11,
@@ -82,7 +80,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'AI Advisor Chat',
+                        'Chat',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -100,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-            // ── MODERN GLASSMORPHIC KNOWLEDGE BASE TELEMETRY BANNER ─────────────
+            // ── INFO BANNER ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: ClipRRect(
@@ -119,7 +117,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Powered by Ollama + RAG Engine (26 verified research frameworks)',
+                          'Powered by 26+ research papers',
                           style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), letterSpacing: 0.2),
                         ),
                       ),
@@ -129,7 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-            // ── MAIN INTERACTIVE MESSAGE CHANNELS TERMINAL ──────────────────────
+            // ── MESSAGES ──
             Expanded(
               child: chat.messages.isEmpty
                   ? const _EmptyChat()
@@ -147,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
             ),
             
-            // ── SEAMLESS OVERLAY PILL INPUT SHELF VIA BLUFFER TERMINAL ──────────
+            // ── INPUT ──
             Container(
               padding: EdgeInsets.only(
                 left: 14,
@@ -179,7 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         cursorColor: AppTheme.primary,
                         maxLines: null,
                         decoration: InputDecoration(
-                          hintText: 'Ask about empirical bug structures...',
+                          hintText: 'Ask about ML models...',
                           hintStyle: TextStyle(color: Colors.black.withOpacity(0.4), fontSize: 13),
                           filled: false, 
                           border: InputBorder.none,
@@ -215,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-// ── CUSTOM RECONFIGURED GLASS EMPTY STATE VIEW ──────────────────────────────
+// ── EMPTY STATE ──
 class _EmptyChat extends StatelessWidget {
   const _EmptyChat();
 
@@ -234,16 +232,16 @@ class _EmptyChat extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white.withOpacity(0.06)),
               ),
-              child: const Icon(Icons.terminal_outlined, size: 48, color: AppTheme.accent),
+              child: const Icon(Icons.chat_outlined, size: 48, color: AppTheme.accent),
             ),
             const SizedBox(height: 20),
             const Text(
-              'Awaiting Telemetry Query',
+              'Ask the AI Advisor',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
-              'Query across historical matrix targets. Answers are compiled against real system model datasets.',
+              'Ask questions about ML models for bug prediction. Responses are grounded in 26 research papers.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13, height: 1.4),
             ),
@@ -263,7 +261,6 @@ class _EmptyChat extends StatelessWidget {
                   color: Colors.white.withOpacity(0.03),
                   child: InkWell(
                     onTap: () {
-                      // 🔥 FIXED: Suggestions chips now query with current user parameters too
                       final auth = context.read<AuthProvider>();
                       final userId = auth.user?.uid ?? "anonymous_session";
                       context.read<ChatProvider>().sendMessage(q, userId);
@@ -290,7 +287,7 @@ class _EmptyChat extends StatelessWidget {
   }
 }
 
-// ── CYBERPUNK SYMMETRIC GLASSMESSAGE CARD BUBBLES ───────────────────────────
+// ── MESSAGE BUBBLE ──
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   const _MessageBubble({required this.message});
@@ -298,12 +295,13 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
+    
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.82),
         decoration: BoxDecoration(
           color: isUser 
               ? AppTheme.primary.withOpacity(0.15) 
@@ -327,20 +325,37 @@ class _MessageBubble extends StatelessWidget {
             )
           ],
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.white.withOpacity(0.9),
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
+        child: isUser 
+            ? Text(
+                message.text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              )
+            : MarkdownBody(
+                data: message.text,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14, height: 1.4),
+                  strong: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  em: TextStyle(color: Colors.white.withOpacity(0.9), fontStyle: FontStyle.italic),
+                  listBullet: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+                  code: TextStyle(
+                    color: Colors.amberAccent, 
+                    backgroundColor: Colors.black.withOpacity(0.3),
+                    fontFamily: 'Courier',
+                    fontSize: 12,
+                  ),
+                ),
+              ),
       ),
     );
   }
 }
 
-// ── GLASSMORPHIC PULSING PROCESSOR INDICATOR ────────────────────────────────
+// ── TYPING INDICATOR ──
 class _TypingIndicator extends StatelessWidget {
   const _TypingIndicator();
 
@@ -369,7 +384,7 @@ class _TypingIndicator extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Parsing knowledge network...',
+              'Thinking...',
               style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12, fontWeight: FontWeight.w500),
             ),
           ],

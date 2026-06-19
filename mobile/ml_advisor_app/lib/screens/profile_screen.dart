@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// ✅ CLASH PROTECTION: Hiding the conflicting Firebase version of AuthProvider
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; 
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../utils/app_theme.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'contact_support_screen.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
-// Unified Theme Tokens Shared across Components
 const Color _goldAccent = Color(0xFFD4AF37);
+const Color _blueAccent = Color(0xFF1565C0);
 const Color _matteBlackCanvas = Color(0xFF121212);
 
 class ProfileScreen extends StatefulWidget {
@@ -40,22 +40,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _openEditProfileDialog(UserModel user) {
       showModalBottomSheet(
         context: context,
-        isScrollControlled: true, // Keeps text fields responsive with the keyboard
-        showDragHandle: true,     // Adds the native pill-shaped drag strip at the top
-        useSafeArea: true,        // 🛡️ Guarantees it never slips under the status bar/notch
-        backgroundColor: const Color(0xFF121212), // 💡 Swap with your exact app background color
+        isScrollControlled: true,
+        showDragHandle: true,
+        useSafeArea: true,
+        backgroundColor: const Color(0xFF121212),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         builder: (context) {
-          // Calculate 85% of the dynamic screen height to anchor the ceiling limit
           final double maxSheetHeight = MediaQuery.sizeOf(context).height * 0.85;
-
           return ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxSheetHeight),
             child: _EditProfileSheet(
               user: user,
-              // ✅ PRESERVED: Your exact data payload pipelines
               onSave: (name, bio, avatarIndex, github, linkedin, phone, address) => 
                   _updateProfileDatabase(user.uid, name, bio, avatarIndex, github, linkedin, phone, address),
             ),
@@ -64,7 +61,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    // ✅ UPDATED: Added parameters to push Phone and Address directly into your Firestore pipeline
     Future<void> _updateProfileDatabase(
       String uid, String name, String bio, int avatarIdx, String github, String linkedin, String phone, String address
     ) async {
@@ -76,23 +72,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'avatarIndex': avatarIdx,
           'githubUsername': github.trim(),
           'linkedinUrl': linkedin.trim(),
-          'phoneNumber': phone.trim(),       // ✅ ADDED FIELD
-          'physicalAddress': address.trim(), // ✅ ADDED FIELD
+          'phoneNumber': phone.trim(),
+          'physicalAddress': address.trim(),
         });
         await context.read<AuthProvider>().refreshUserSession();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Telemetry profiles updated successfully.'))
+          const SnackBar(content: Text('Profile updated successfully.'))
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to broadcast updates: $e'))
+          SnackBar(content: Text('Failed to update profile: $e'))
         );
       } finally {
         if (mounted) setState(() => _isUpdating = false);
       }
     }
 
-    // ── SECURE RE-AUTHENTICATION AND PASSWORD UPDATER ──
     void _openChangePasswordDialog(String email) {
       final currentPasswordController = TextEditingController();
       final newPasswordController = TextEditingController();
@@ -112,13 +107,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   side: BorderSide(color: Colors.white.withOpacity(0.08)),
                 ),
                 title: const Text(
-                  'SECURITY IDENTIFICATION ACCESS',
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                  'Change Password',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 content: isProcessing 
                   ? const SizedBox(
                       height: 140,
-                      child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_goldAccent))),
+                      child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_blueAccent))),
                     )
                   : Form(
                       key: dialogFormKey,
@@ -127,26 +122,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Text(
-                              'To change your password, Firebase requires authentication using your existing active keys.',
-                              style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+                              'Enter your current password and choose a new one.',
+                              style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
                             ),
                             const SizedBox(height: 20),
                             TextFormField(
                               controller: currentPasswordController,
                               obscureText: true,
                               style: const TextStyle(color: Colors.white, fontSize: 14),
-                              decoration: _buildDialogInputDecoration('Current Password Verification'),
-                              validator: (val) => (val == null || val.isEmpty) ? 'Current credentials required.' : null,
+                              decoration: _buildDialogInputDecoration('Current Password'),
+                              validator: (val) => (val == null || val.isEmpty) ? 'Current password required.' : null,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: newPasswordController,
                               obscureText: true,
                               style: const TextStyle(color: Colors.white, fontSize: 14),
-                              decoration: _buildDialogInputDecoration('New System Password'),
+                              decoration: _buildDialogInputDecoration('New Password'),
                               validator: (val) {
-                                if (val == null || val.isEmpty) return 'New core key mapping required.';
-                                if (val.length < 6) return 'Key must be at least 6 characters long.';
+                                if (val == null || val.isEmpty) return 'New password required.';
+                                if (val.length < 6) return 'Password must be at least 6 characters.';
                                 return null;
                               },
                             ),
@@ -155,9 +150,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               controller: confirmPasswordController,
                               obscureText: true,
                               style: const TextStyle(color: Colors.white, fontSize: 14),
-                              decoration: _buildDialogInputDecoration('Confirm New System Password'),
+                              decoration: _buildDialogInputDecoration('Confirm New Password'),
                               validator: (val) {
-                                if (val != newPasswordController.text) return 'Key tokens do not match structural mapping.';
+                                if (val != newPasswordController.text) return 'Passwords do not match.';
                                 return null;
                               },
                             ),
@@ -173,11 +168,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       confirmPasswordController.dispose();
                       Navigator.pop(context);
                     },
-                    child: const Text('Abort Sequence', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.white38, fontSize: 13)),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _goldAccent,
+                      backgroundColor: _blueAccent,
                       foregroundColor: _matteBlackCanvas,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -204,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 backgroundColor: Colors.green,
-                                content: Text('Access credential update transaction successful.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                content: Text('Password updated successfully.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               ),
                             );
                           }
@@ -213,13 +208,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: Colors.redAccent,
-                              content: Text('Security rejected transaction: ${e.toString().split(']').last.trim()}'),
+                              content: Text('Error: ${e.toString().split(']').last.trim()}'),
                             ),
                           );
                         }
                       }
                     },
-                    child: const Text('Update Credentials', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                 ],
               );
@@ -235,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fillColor: Colors.white.withOpacity(0.02),
         labelText: label,
         labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-        floatingLabelStyle: const TextStyle(color: _goldAccent, fontSize: 13, fontWeight: FontWeight.bold),
+        floatingLabelStyle: const TextStyle(color: _blueAccent, fontSize: 13, fontWeight: FontWeight.bold),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -243,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _goldAccent, width: 1.5),
+          borderSide: const BorderSide(color: _blueAccent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -264,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user == null) {
         return const Scaffold(
           backgroundColor: _matteBlackCanvas,
-          body: Center(child: Text('No active profile mapping session detected.', style: TextStyle(color: Colors.white))),
+          body: Center(child: Text('No user profile found.', style: TextStyle(color: Colors.white))),
         );
       }
 
@@ -276,8 +271,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: _matteBlackCanvas,
         appBar: AppBar(
           title: const Text(
-            'ENGINEER ECOSYSTEM PROFILE', 
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.5, color: Colors.white70)
+            'Profile', 
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)
           ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
@@ -285,13 +280,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           foregroundColor: Colors.white,
         ),
         body: _isUpdating
-            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_goldAccent)))
+            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_blueAccent)))
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 120.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── IDENTITY HEADER BLUR MATRIX CARD ──────────────────────
+                    // ── PROFILE HEADER ──────────────────────────────────────────
                     _buildGlassmorphicContainer(
                       child: Column(
                         children: [
@@ -300,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(color: _goldAccent.withOpacity(0.2), shape: BoxShape.circle),
+                                decoration: BoxDecoration(color: _blueAccent.withOpacity(0.2), shape: BoxShape.circle),
                                 child: CircleAvatar(
                                   radius: 54,
                                   backgroundColor: Colors.white10,
@@ -311,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap: () => _openEditProfileDialog(user),
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(color: _goldAccent, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(color: _blueAccent, shape: BoxShape.circle),
                                   child: const Icon(Icons.edit_rounded, color: _matteBlackCanvas, size: 16),
                                 ),
                               )
@@ -321,10 +316,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text(
                             user.displayName,
                             textAlign: TextAlign.center,
-                            maxLines: 2, // ✅ Allows two lines max for complex corporate names
-                            overflow: TextOverflow.ellipsis, // ✅ Truncates cleanly if they exceed two lines
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 22, // Slightly downscaled from 24 for optimal density
+                              fontSize: 22,
                               fontWeight: FontWeight.bold, 
                               color: Colors.white, 
                               letterSpacing: -0.5
@@ -358,52 +353,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── CARD 1: PROFILE INFO ───────────────────────────────────
-                    _buildSectionLabel('PROFILE CORE INFO'),
+                   // ── ADMIN DASHBOARD ──
+                    if (user.role.trim().toLowerCase() == 'admin') ...[
+                      _buildSectionLabel('Admin Controls'),
+                      _buildGlassmorphicContainer(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            _buildSettingsTile(
+                              icon: Icons.admin_panel_settings_rounded,
+                              title: 'Open Admin Dashboard',
+                              iconColor: Colors.redAccent,
+                              textColor: Colors.redAccent,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const AdminDashboardScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // ── PROFILE INFO ──
+                    _buildSectionLabel('Profile Information'),
                     _buildGlassmorphicContainer(
                       child: Column(
                         children: [
-                          // ✅ UPDATED: Reading live variable instead of placeholder string
-                          _buildRowDetail(
-                            'Phone Number', 
-                            user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not Provisioned', 
-                            Icons.phone_iphone_rounded
-                          ),
+                          _buildRowDetail('Phone', user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not set', Icons.phone_iphone_rounded),
                           const Divider(height: 28, color: Colors.white10),
-                          _buildRowDetail('Email Address', user.email, Icons.alternate_email_rounded),
+                          _buildRowDetail('Email', user.email, Icons.alternate_email_rounded),
                           const Divider(height: 28, color: Colors.white10),
-                          // ✅ UPDATED: Reading live address configuration string variable
-                          _buildRowDetail(
-                            'Address', 
-                            user.physicalAddress.isNotEmpty ? user.physicalAddress : 'Not Provisioned', 
-                            Icons.location_on_rounded
-                          ),
+                          _buildRowDetail('Address', user.physicalAddress.isNotEmpty ? user.physicalAddress : 'Not set', Icons.location_on_rounded),
                           
                           if (user.githubUsername.isNotEmpty) ...[
                             const Divider(height: 28, color: Colors.white10),
-                            _buildRowDetail('GitHub Profile', user.githubUsername, Icons.code_rounded),
+                            _buildRowDetail('GitHub', user.githubUsername, Icons.code_rounded),
                           ],
                           
                           if (user.linkedinUrl.isNotEmpty) ...[
                             const Divider(height: 28, color: Colors.white10),
-                            _buildRowDetail('LinkedIn Link', user.linkedinUrl, Icons.link_rounded),
+                            _buildRowDetail('LinkedIn', user.linkedinUrl, Icons.link_rounded),
                           ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // ── CARD 2: ACCOUNT MATRIX ─────────────────────────────────
-                    _buildSectionLabel('ACCOUNT ECOSYSTEM SPECS'),
+                    // ── ACCOUNT DETAILS ──
+                    _buildSectionLabel('Account Details'),
                     _buildGlassmorphicContainer(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildRowDetail('Registration Date', formattedJoinDate, Icons.calendar_today_rounded),
+                          _buildRowDetail('Joined', formattedJoinDate, Icons.calendar_today_rounded),
                           
                           if (user.interests.isNotEmpty) ...[
                             const Divider(height: 28, color: Colors.white10),
-                            const Text('RESEARCH DOMAIN VECTORS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+                            const Text('Interests', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
                             const SizedBox(height: 10),
                             Wrap(
                               spacing: 8, runSpacing: 6,
@@ -421,18 +433,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           if (user.techStack.isNotEmpty) ...[
                             const Divider(height: 28, color: Colors.white10),
-                            const Text('COMPILED ECOSYSTEM TOOLS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 1.5)),
+                            const Text('Tech Stack', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _blueAccent, letterSpacing: 1.5)),
                             const SizedBox(height: 10),
                             Wrap(
                               spacing: 8, runSpacing: 6,
                               children: user.techStack.map((tool) => Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: _goldAccent.withOpacity(0.05),
+                                  color: _blueAccent.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: _goldAccent.withOpacity(0.2))
+                                  border: Border.all(color: _blueAccent.withOpacity(0.2))
                                 ),
-                                child: Text(tool, style: const TextStyle(fontSize: 12, color: _goldAccent, fontWeight: FontWeight.bold)),
+                                child: Text(tool, style: const TextStyle(fontSize: 12, color: _blueAccent, fontWeight: FontWeight.bold)),
                               )).toList(),
                             ),
                           ],
@@ -441,36 +453,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── CARD 3: SECURITY CONTROLS ──────────────────────────────
-                    _buildSectionLabel('SECURITY UTILITY GATEWAYS'),
+                    // ── SECURITY ──
+                    _buildSectionLabel('Security'),
                     _buildGlassmorphicContainer(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          if (user.role.trim().toLowerCase() == 'admin') ...[
-                            _buildSettingsTile(
-                              icon: Icons.admin_panel_settings_rounded,
-                              title: 'Access Admin Dashboard Matrix',
-                              iconColor: Colors.redAccent,
-                              textColor: Colors.redAccent,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const AdminDashboardScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const Divider(height: 1, color: Colors.white10),
-                          ],
-                          _buildSettingsTile(
-                            icon: Icons.security_rounded,
-                            title: 'Two-Factor Authentication',
-                            trailing: Text('[Configure Later]', style: TextStyle(color: _goldAccent.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                            onTap: () => _triggerStubNotification('MFA token registration terminal incoming.'),
-                          ),
-                          const Divider(height: 1, color: Colors.white10),
                           _buildSettingsTile(
                             icon: Icons.lock_reset_rounded,
                             title: 'Change Password',
@@ -481,16 +469,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── CARD 4: SUPPORT & LOGOUT PANEL ─────────────────────────
-                    _buildSectionLabel('NODE LIFECYCLE & CRADLE'),
+                    // ── SUPPORT & LOGOUT ──
+                    _buildSectionLabel('Support & Account'),
                     _buildGlassmorphicContainer(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
                           _buildSettingsTile(
                             icon: Icons.help_outline_rounded,
-                            title: 'Contact and Support Matrix',
-                            // trailing: const Text('[Adding Page Later]', style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
+                            title: 'Contact Support',
                             onTap: () {
                                 Navigator.push(
                                   context,
@@ -503,7 +490,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const Divider(height: 1, color: Colors.white10),
                           _buildSettingsTile(
                             icon: Icons.logout_rounded,
-                            title: 'Terminate Active Node Session',
+                            title: 'Logout',
                             textColor: Colors.redAccent,
                             iconColor: Colors.redAccent,
                             onTap: () async => await authProvider.logout(),
@@ -546,22 +533,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    Widget _buildRowDetail(String label, String balanceVal, IconData icon) {
+    Widget _buildRowDetail(String label, String value, IconData icon) {
       return Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // ✅ Keeps icon aligned if text wraps
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: Colors.white38),
           const SizedBox(width: 12),
           Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          
-          const SizedBox(width: 16), // ✅ Fixed separation boundary instead of Spacer
-          
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
-              balanceVal,
-              textAlign: TextAlign.end, // ✅ Keeps data flush right
-              overflow: TextOverflow.ellipsis, // ✅ Safely ends long text with "..." if out of room
-              maxLines: 1, // ✅ Set to 2 if you want physical addresses to wrap downward instead
+              value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
             ),
           ),
@@ -584,18 +569,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: onTap,
       );
     }
-
-    void _triggerStubNotification(String detail) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.grey[900],
-          content: Text(detail, style: const TextStyle(color: _goldAccent, fontWeight: FontWeight.bold)),
-        ),
-      );
-    }
   }
 
-// ── UTILITY DECORATION BUILDER FOR TEXT FIELDS ──────────────────────────────
 InputDecoration _buildGlassInputDecoration({required String label, IconData? prefixIcon}) {
   return InputDecoration(
     filled: true,
@@ -603,7 +578,7 @@ InputDecoration _buildGlassInputDecoration({required String label, IconData? pre
     labelText: label,
     prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18, color: Colors.white38) : null,
     labelStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-    floatingLabelStyle: const TextStyle(color: _goldAccent, fontWeight: FontWeight.bold, fontSize: 13),
+    floatingLabelStyle: const TextStyle(color: _blueAccent, fontWeight: FontWeight.bold, fontSize: 13),
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
@@ -611,12 +586,11 @@ InputDecoration _buildGlassInputDecoration({required String label, IconData? pre
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: _goldAccent, width: 1.5),
+      borderSide: const BorderSide(color: _blueAccent, width: 1.5),
     ),
   );
 }
 
-// ── STANDALONE GLASSMORPHIC RECONFIGURATION SHEET ───────────────────────────
 class _EditProfileSheet extends StatefulWidget {
   final UserModel user;
   final Function(String name, String bio, int avatarIndex, String github, String linkedin, String phone, String address) onSave;
@@ -636,6 +610,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
   late int _selectedAvatar;
+  
+  PhoneNumber _currentParsedNumber = PhoneNumber(isoCode: 'ZA');
 
   @override
   void initState() {
@@ -647,6 +623,22 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _phoneController = TextEditingController(text: widget.user.phoneNumber);
     _addressController = TextEditingController(text: widget.user.physicalAddress);
     _selectedAvatar = widget.user.avatarIndex;
+    _initializePhoneNumber();
+  }
+
+  void _initializePhoneNumber() async {
+    if (widget.user.phoneNumber.isNotEmpty) {
+      try {
+        PhoneNumber parsed = await PhoneNumber.getRegionInfoFromPhoneNumber(widget.user.phoneNumber);
+        if (mounted) {
+          setState(() {
+            _currentParsedNumber = parsed;
+          });
+        }
+      } catch (_) {
+        _currentParsedNumber = PhoneNumber(isoCode: 'ZA', phoneNumber: widget.user.phoneNumber);
+      }
+    }
   }
 
   @override
@@ -665,13 +657,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // 🛡️ Handles defensive viewport padding when the virtual keyboard slides into frame
       padding: EdgeInsets.fromLTRB(0, 0, 0, MediaQuery.of(context).viewInsets.bottom),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF121212).withOpacity(0.90), // Matched base token layer
+            color: const Color(0xFF121212).withOpacity(0.90),
             border: Border(
               top: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.5),
             ),
@@ -683,28 +674,25 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               child: Form(
                 key: _formKey,
                 child: SingleChildScrollView(
-                  // Clean padding offset since native drag handle allocates its own top spacer
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 🗑️ REMOVED: Old hardcoded grey pill Container design block to fix double-handle glitch.
-                      
                       const Text(
-                        'SYSTEM PROFILE RECONFIGURATION',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _goldAccent, letterSpacing: 2.0),
+                        'Edit Profile',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       const Text(
-                        'Edit Node Identity',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
+                        'Update your profile information below.',
+                        style: TextStyle(fontSize: 13, color: Colors.white60),
                       ),
                       const SizedBox(height: 28),
                       Center(
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(color: _goldAccent.withOpacity(0.15), shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: _blueAccent.withOpacity(0.15), shape: BoxShape.circle),
                           child: CircleAvatar(
                             radius: 48,
                             backgroundColor: Colors.white10,
@@ -714,8 +702,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       ),
                       const SizedBox(height: 24),
                       const Text(
-                        'MATRIX IDENTITY REGISTRATION',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.5),
+                        'Choose Avatar',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1.0),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -732,7 +720,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                                 margin: const EdgeInsets.symmetric(horizontal: 6),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: isSelected ? _goldAccent : Colors.transparent, width: 2),
+                                  border: Border.all(color: isSelected ? _blueAccent : Colors.transparent, width: 2),
                                 ),
                                 child: CircleAvatar(radius: 26, backgroundImage: AssetImage(_getAvatarPath(index))),
                               ),
@@ -744,8 +732,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       TextFormField(
                         controller: _nameController,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
-                        validator: (val) => (val == null || val.trim().isEmpty) ? 'Identity designation required.' : null,
-                        decoration: _buildGlassInputDecoration(label: 'Display Designation Mapping', prefixIcon: Icons.person_outline_rounded),
+                        validator: (val) => (val == null || val.trim().isEmpty) ? 'Name is required.' : null,
+                        decoration: _buildGlassInputDecoration(label: 'Full Name', prefixIcon: Icons.person_outline_rounded),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -753,20 +741,54 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                         maxLines: 2,
                         maxLength: 120,
                         style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
-                        decoration: _buildGlassInputDecoration(label: 'Bio / Telemetry Objectives'),
+                        decoration: _buildGlassInputDecoration(label: 'Bio (optional)'),
                       ),
                       const SizedBox(height: 20),
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: _buildGlassInputDecoration(label: 'Phone Number Mapping', prefixIcon: Icons.phone_iphone_rounded),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                        ),
+                        child: InternationalPhoneNumberInput(
+                          onInputChanged: (PhoneNumber number) {
+                            _phoneController.text = number.phoneNumber ?? '';
+                          },
+                          textFieldController: TextEditingController(
+                            text: _phoneController.text.isNotEmpty && _phoneController.text.contains(' ') 
+                                ? _phoneController.text.split(' ').last 
+                                : _phoneController.text
+                          ),
+                          initialValue: _currentParsedNumber,
+                          selectorConfig: const SelectorConfig(
+                            selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                            useEmoji: true,
+                          ),
+                          ignoreBlank: false,
+                          autoValidateMode: AutovalidateMode.disabled,
+                          selectorTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
+                          textStyle: const TextStyle(color: Colors.white, fontSize: 14),
+                          cursorColor: _blueAccent,
+                          formatInput: true,
+                          keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
+                          inputDecoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFF1E1E1E),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            hintText: '+27 Phone Number',
+                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _addressController,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: _buildGlassInputDecoration(label: 'Physical Address Node Location', prefixIcon: Icons.location_on_rounded),
+                        decoration: _buildGlassInputDecoration(label: 'Address', prefixIcon: Icons.location_on_rounded),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -786,7 +808,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                         height: 52,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _goldAccent,
+                            backgroundColor: _blueAccent,
                             foregroundColor: _matteBlackCanvas,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             elevation: 0,
@@ -805,7 +827,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                               Navigator.pop(context);
                             }
                           },
-                          child: const Text('COMMIT CHANGES', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0, fontSize: 13)),
+                          child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 14)),
                         ),
                       ),
                     ],

@@ -21,7 +21,6 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
 
-  // 👥 EDIT THIS ARRAY WITH YOUR TEAM MEMBERS' ACTUAL DETAILS
   final List<Map<String, String>> _devGroupMembers = [
     {
       'name': 'Shine Chikwapulo',
@@ -58,7 +57,6 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // 📥 Transmitting payload vector straight to Cloud Firestore logs
       await FirebaseFirestore.instance.collection('support_tickets').add({
         'uid': widget.currentUser.uid,
         'senderName': widget.currentUser.displayName,
@@ -75,7 +73,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.green,
-            content: Text('Transmission complete. Support ticket uploaded to console.', 
+            content: Text('Support ticket submitted successfully.',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
             ),
           ),
@@ -86,7 +84,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text('Transmission error: $e'),
+            content: Text('Error: $e'),
           ),
         );
       }
@@ -101,8 +99,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       backgroundColor: _matteBlackCanvas,
       appBar: AppBar(
         title: const Text(
-          'CONTACT & SUPPORT MATRIX',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.5, color: Colors.white70),
+          'Contact Support',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -114,9 +112,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionLabel('DEVELOPMENT SYNDICATE CORES'),
+            _buildSectionLabel('Team Members'),
             
-            // Loop through your development crew cards dynamically
             ..._devGroupMembers.map((member) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: _buildGlassmorphicContainer(
@@ -124,7 +121,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   children: [
                     CircleAvatar(
                       backgroundColor: _goldAccent.withOpacity(0.1),
-                      child: const Icon(Icons.terminal_rounded, color: _goldAccent, size: 20),
+                      child: const Icon(Icons.person_outline, color: _goldAccent, size: 20),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -145,7 +142,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
             )),
             
             const SizedBox(height: 20),
-            _buildSectionLabel('SECURE TELEMETRY FEEDBACK TERMINAL'),
+            _buildSectionLabel('Submit Feedback'),
             
             _buildGlassmorphicContainer(
               child: Form(
@@ -154,23 +151,23 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Submit diagnostic issues or design queries directly to our backend logs.',
+                      'Send feedback or report issues. Your message will be stored in our support database.',
                       style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _subjectController,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
-                      validator: (val) => (val == null || val.trim().isEmpty) ? 'Subject string mapping mandatory.' : null,
-                      decoration: _buildInputDecoration(label: 'Ticket Subject Line', icon: Icons.topic_outlined),
+                      validator: (val) => (val == null || val.trim().isEmpty) ? 'Subject is required.' : null,
+                      decoration: _buildInputDecoration(label: 'Subject', icon: Icons.topic_outlined),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _messageController,
                       maxLines: 4,
                       style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-                      validator: (val) => (val == null || val.trim().isEmpty) ? 'Core terminal submission description missing.' : null,
-                      decoration: _buildInputDecoration(label: 'Diagnostic Log Message Detail'),
+                      validator: (val) => (val == null || val.trim().isEmpty) ? 'Message is required.' : null,
+                      decoration: _buildInputDecoration(label: 'Message'),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -188,7 +185,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                                 height: 20, width: 20,
                                 child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(_matteBlackCanvas)),
                               )
-                            : const Text('TRANSMIT TO FIELD DEV LOGGER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                            : const Text('Submit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                     ),
                   ],

@@ -1,0 +1,16 @@
+flutter_native_splash:
+  # blue-colored background token
+  color: "#1565C0"
+  image: assets/images/Logo/MLA.png
+  # ⚡ ADDED: Global branding image position layout anchor
+  branding: assets/images/Logo/branding.png
+  
+  # Ensures compatibility layout mapping across Android 12+ devices
+  android_12:
+    color: "#1565C0"
+    icon_background_color: "#1565C0"
+    image: assets/images/Logo/MLA.png
+    # ⚡ ADDED: Ensures Android 12+ binds the layout boundary to the bottom margin correctly
+    branding: assets/images/Logo/branding.png
+
+  fullscreen: true

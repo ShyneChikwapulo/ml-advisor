@@ -6,7 +6,10 @@ import '../../models/paper_model.dart';
 import '../../models/glossary_model.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
-import '../../models/user_model.dart'; // 👈 ADD THIS LINE
+import '../../models/user_model.dart';
+import '../../widgets/loading_overlay.dart';
+import '../../widgets/delete_confirmation_dialog.dart';
+
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -23,7 +26,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDashboardData(); // Only fetch once the screen transition is 100% complete
+      _loadDashboardData();
     });
   }
 
@@ -33,13 +36,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _loading = true;
 
   static const Color goldAccent = Color(0xFFD4AF37);
+  static const Color blueAccent = Color(0xFF1565C0);
   static const Color matteBlackCanvas = Color(0xFF121212);
   static const Color darkInputSurface = Color(0xFF1A1A1A);
 
 
 
   double get _currentMaxX {
-    if (_historyData.isEmpty) return 4; // Fallback ceiling matching backup data
+    if (_historyData.isEmpty) return 4;
     double highestX = 0;
     for (var entry in _historyData) {
       double x = (entry['monthIndex'] ?? 0).toDouble();
@@ -49,7 +53,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   double get _currentMaxY {
-    if (_historyData.isEmpty) return 12; // Default fallback ceiling
+    if (_historyData.isEmpty) return 12;
     double highestY = 0;
     
     for (var entry in _historyData) {
@@ -60,22 +64,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       }
     }
     
-    // Return the highest value found plus a 20% padding cushion for visual headroom
-    // If the total data is tiny, default to a minimum ceiling of 12
     return highestY < 10 ? 12 : (highestY * 1.2);
   }
 
   Future<void> _loadDashboardData() async {
     setState(() => _loading = true);
     
-    // 1. Try fetching counters matrix
     try {
       _stats = await _service.getAnalytics();
     } catch (e) {
       _stats = {'models': 8, 'papers': 3, 'glossary': 10, 'users': 4};
     }
 
-    // 2. Try fetching graph series data independently with a direct empty-check fallback
     try {
       final data = await _service.getHistoricalAnalytics();
       if (data != null && data.isNotEmpty) {
@@ -103,15 +103,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
 
 
-  // Generate dynamic chart data mappings from firestore records
   List<FlSpot> _getChartSpots(String key) {
     if (_historyData.isEmpty) {
-        return [const FlSpot(0, 0)]; // Prevents fl_chart from crashing on empty lists
+        return [const FlSpot(0, 0)];
       }    
 
     return _historyData.map((e) {
-
-      // print("Mapping chart series data - keys found: ${e.keys.toList()} | checking for: $key");
       final double x = (e['monthIndex'] ?? 0).toDouble();
       final double y = (e[key] ?? 0).toDouble();
       return FlSpot(x, y);
@@ -119,23 +116,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _getGrowthPercentage(String key) {
-    // We need at least two months of data to calculate a growth trend
     if (_historyData.length < 2) return '0%';
 
-    // Create a copy and sort by monthIndex to make sure we are comparing chronological order
     List<Map<String, dynamic>> sortedData = List.from(_historyData);
     sortedData.sort((a, b) => (a['monthIndex'] ?? 0).compareTo(b['monthIndex'] ?? 0));
 
-    // Grab the latest month and the month right before it
     final num latestValue = sortedData.last[key] ?? 0;
     final num previousValue = sortedData[sortedData.length - 2][key] ?? 0;
 
-    // Handle baseline zero edge-case to avoid dividing by zero
     if (previousValue == 0) {
       return latestValue > 0 ? '+100%' : '0%';
     }
 
-    // Calculate percentage change: ((Current - Previous) / Previous) * 100
     final double percentageChange = ((latestValue - previousValue) / previousValue) * 100;
     
     final String sign = percentageChange >= 0 ? '+' : '';
@@ -144,208 +136,211 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   
 
-@override
+  @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
-      child: Scaffold(
-        backgroundColor: matteBlackCanvas,
-        body: SafeArea(
-          bottom: false,
-          child: NestedScrollView(
-            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-              return [
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── TITLE HEADER ───────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
-                        child: Row(
-                          children: [
-                            if (Navigator.canPop(context)) ...[
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                                onPressed: () => Navigator.pop(context),
+      child: LoadingOverlay(
+        isLoading: _loading,
+        loadingText: "Loading analytics...", 
+        child: Scaffold(
+          backgroundColor: matteBlackCanvas,
+          body: SafeArea(
+            bottom: false,
+            child: NestedScrollView(
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                return [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── HEADER ──
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
+                          child: Row(
+                            children: [
+                              if (Navigator.canPop(context)) ...[
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                                const SizedBox(width: 4),
+                              ] else ...[
+                                const SizedBox(width: 8),
+                              ],
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'ADMIN',
+                                    style: TextStyle(
+                                      color: blueAccent.withOpacity(0.85),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Admin Dashboard',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                            ] else ...[
-                              const SizedBox(width: 8),
                             ],
-                            Column(
+                          ),
+                        ),
+                        
+                        // ── STATS CARDS ──
+                        if (!_loading)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.35,
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                              children: [
+                                _BubbleStatCard('Total Models', _stats['models'] ?? 0, _getGrowthPercentage('modelsCount'), Icons.psychology, const [Color(0xFF6A11CB), Color(0xFF2575FC)]),
+                                _BubbleStatCard('Research Papers', _stats['papers'] ?? 0, _getGrowthPercentage('papersCount'), Icons.article, const [Color(0xFF11998e), Color(0xFF38ef7d)]),
+                                _BubbleStatCard('Glossary Terms', _stats['glossary'] ?? 0, _getGrowthPercentage('glossaryCount'), Icons.menu_book, const [Color(0xFFf857a6), Color(0xFFff5858)]),
+                                _BubbleStatCard('System Users', _stats['users'] ?? 0, _getGrowthPercentage('usersCount'), Icons.people, const [Color(0xFFe65c00), Color(0xFFF9D423)]),
+                              ],
+                            ),
+                          ),
+
+                        // ── GROWTH CHART ──
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.02),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: Colors.white.withOpacity(0.06)),
+                            ),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'SYSTEM MANAGEMENT CORE',
-                                  style: TextStyle(
-                                    color: goldAccent.withOpacity(0.85),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 2.0,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
                                 const Text(
-                                  'Admin Dashboard',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -0.5,
+                                  'Growth Over Time',
+                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 14,
+                                  runSpacing: 6,
+                                  children: [
+                                    _LegendIndicator(label: 'Models', color: const Color(0xFF2575FC)),
+                                    _LegendIndicator(label: 'Papers', color: const Color(0xFF38ef7d)),
+                                    _LegendIndicator(label: 'Glossary', color: const Color(0xFFf857a6)),
+                                    _LegendIndicator(label: 'Users', color: const Color(0xFFF9D423)),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  height: 180,
+                                  child: LineChart(
+                                    LineChartData(
+                                      minX: 0,
+                                      maxX: _currentMaxX,
+                                      minY: 0,
+                                      maxY: _currentMaxY,
+                                      gridData: FlGridData(
+                                        show: true,
+                                        drawVerticalLine: false,
+                                        getDrawingHorizontalLine: (val) => FlLine(color: Colors.white.withOpacity(0.03), strokeWidth: 1),
+                                      ),
+                                      titlesData: FlTitlesData(
+                                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        leftTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            reservedSize: 40,
+                                            getTitlesWidget: (v, _) => Text('${v.toInt()}', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
+                                          ),
+                                        ),
+                                        bottomTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            interval: 1,
+                                            getTitlesWidget: (v, _) {
+                                              final yearMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                              int index = v.toInt();
+                                              
+                                              if (index < 0 || index >= yearMonths.length) return const Text('');
+                                              
+                                              return Padding(
+                                                padding: const EdgeInsets.only(top: 8.0),
+                                                child: Text(
+                                                  yearMonths[index], 
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.4), 
+                                                    fontSize: 10, 
+                                                    fontWeight: FontWeight.bold
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      borderData: FlBorderData(show: false),
+                                      lineBarsData: [
+                                        _generateLineBarBarData(_getChartSpots('modelsCount'), const Color(0xFF2575FC)),
+                                        _generateLineBarBarData(_getChartSpots('papersCount'), const Color(0xFF38ef7d)),
+                                        _generateLineBarBarData(_getChartSpots('glossaryCount'), const Color(0xFFf857a6)),
+                                        _generateLineBarBarData(_getChartSpots('usersCount'), const Color(0xFFF9D423)),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                      
-                      // ── 2x2 NEON BUBBLE GRADIENT METRICS GRID ──────────────
-                      if (!_loading)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.35,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            children: [
-                              _BubbleStatCard('Total Models', _stats['models'] ?? 0, _getGrowthPercentage('modelsCount'), Icons.psychology, const [Color(0xFF6A11CB), Color(0xFF2575FC)]),
-                              _BubbleStatCard('Research Papers', _stats['papers'] ?? 0, _getGrowthPercentage('papersCount'), Icons.article, const [Color(0xFF11998e), Color(0xFF38ef7d)]),
-                              _BubbleStatCard('Glossary Terms', _stats['glossary'] ?? 0, _getGrowthPercentage('glossaryCount'), Icons.menu_book, const [Color(0xFFf857a6), Color(0xFFff5858)]),
-                              _BubbleStatCard('System Users', _stats['users'] ?? 0, _getGrowthPercentage('usersCount'), Icons.people, const [Color(0xFFe65c00), Color(0xFFF9D423)]),
-                            ],
                           ),
                         ),
-
-                      // ── QUAD-SERIES TIME-SERIES GROWTH CHART ───────────────
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.02),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Collection Growth Analysis',
-                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 12),
-                              // Grid Legend Layout
-                              Wrap(
-                                spacing: 14,
-                                runSpacing: 6,
-                                children: [
-                                  _LegendIndicator(label: 'Models', color: const Color(0xFF2575FC)),
-                                  _LegendIndicator(label: 'Papers', color: const Color(0xFF38ef7d)),
-                                  _LegendIndicator(label: 'Glossary', color: const Color(0xFFf857a6)),
-                                  _LegendIndicator(label: 'Users', color: const Color(0xFFF9D423)),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                height: 180,
-                                child: LineChart(
-                                  LineChartData(
-                                    minX: 0,
-                                    maxX: _currentMaxX,
-                                    minY: 0,
-                                    maxY: _currentMaxY,
-                                    gridData: FlGridData(
-                                      show: true,
-                                      drawVerticalLine: false,
-                                      getDrawingHorizontalLine: (val) => FlLine(color: Colors.white.withOpacity(0.03), strokeWidth: 1),
-                                    ),
-                                    titlesData: FlTitlesData(
-                                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 40,
-                                          getTitlesWidget: (v, _) => Text('${v.toInt()}', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)),
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          interval: 1,
-                                          getTitlesWidget: (v, _) {
-                                            final yearMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                            int index = v.toInt();
-                                            
-                                            if (index < 0 || index >= yearMonths.length) return const Text('');
-                                            
-                                            return Padding(
-                                              padding: const EdgeInsets.only(top: 8.0),
-                                              child: Text(
-                                                yearMonths[index], 
-                                                style: TextStyle(
-                                                  color: Colors.white.withOpacity(0.4), 
-                                                  fontSize: 10, 
-                                                  fontWeight: FontWeight.bold
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    lineBarsData: [
-                                      _generateLineBarBarData(_getChartSpots('modelsCount'), const Color(0xFF2575FC)),
-                                      _generateLineBarBarData(_getChartSpots('papersCount'), const Color(0xFF38ef7d)),
-                                      _generateLineBarBarData(_getChartSpots('glossaryCount'), const Color(0xFFf857a6)),
-                                      _generateLineBarBarData(_getChartSpots('usersCount'), const Color(0xFFF9D423)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverTabBarDelegate(
-                    TabBar(
-                      isScrollable: false,
-                      tabs: const [
-                        Tab(text: 'Models'),
-                        Tab(text: 'Papers'),
-                        Tab(text: 'Glossary'),
-                        Tab(text: 'Users'), // 👈 ADD THIS LINE
+                        const SizedBox(height: 12),
                       ],
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white.withOpacity(0.4),
-                      indicatorColor: goldAccent,
-                      indicatorWeight: 2,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.3),
                     ),
                   ),
-                ),
-              ];
-            },
-            body: TabBarView(
-              children: [
-                _ModelsTab(onRefreshMetrics: _loadDashboardData),
-                _PapersTab(onRefreshMetrics: _loadDashboardData),
-                _GlossaryTab(onRefreshMetrics: _loadDashboardData),
-                _UsersTab(onRefreshMetrics: _loadDashboardData),
-              ],
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverTabBarDelegate(
+                      TabBar(
+                        isScrollable: false,
+                        tabs: const [
+                          Tab(text: 'Models'),
+                          Tab(text: 'Papers'),
+                          Tab(text: 'Glossary'),
+                          Tab(text: 'Users'),
+                        ],
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white.withOpacity(0.4),
+                        indicatorColor: blueAccent,
+                        indicatorWeight: 2,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: TabBarView(
+                children: [
+                  _ModelsTab(onRefreshMetrics: _loadDashboardData),
+                  _PapersTab(onRefreshMetrics: _loadDashboardData),
+                  _GlossaryTab(onRefreshMetrics: _loadDashboardData),
+                  _UsersTab(onRefreshMetrics: _loadDashboardData),
+                ],
+              ),
             ),
           ),
         ),
@@ -366,7 +361,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-// ── HIGH FIDELITY GRADIENT SHINY GLOW STAT CARD ─────────────────────────────
+// ── STAT CARD ──
 class _BubbleStatCard extends StatelessWidget {
   final String label;
   final int value;
@@ -398,7 +393,6 @@ class _BubbleStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Internal Ambient Highlight Overlay Bubble Vector Art Style
             Positioned(
               right: -20,
               top: -20,
@@ -448,10 +442,9 @@ class _BubbleStatCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Wrapped in FittedBox to auto-scale down text size if value hits 100s/1000s
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft, // Keeps the text anchored to the left while shrinking
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           '$value',
                           style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
@@ -474,7 +467,7 @@ class _BubbleStatCard extends StatelessWidget {
   }
 }
 
-// ── UTILITY DECORATION BUILDER FOR HIGH-CONTRAST FORM INPUT FIELDS ───────────
+// ── FORM DECORATION ──
 class _FormInputDecoration {
   static InputDecoration build({required String labelText}) {
     return InputDecoration(
@@ -554,10 +547,12 @@ class _ModelsTabState extends State<_ModelsTab> {
   final _recallCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
-  // Add these new list data text routing handles
   final _strengthsCtrl = TextEditingController();
   final _weaknessesCtrl = TextEditingController();
   final _useCasesCtrl = TextEditingController();
+
+  final _datasetCtrl = TextEditingController();
+  String? _selectedPaperId;
 
   String _category = 'Ensemble';
   bool _handlesImbalance = false;
@@ -589,14 +584,18 @@ class _ModelsTabState extends State<_ModelsTab> {
       _handlesImbalance = existingModel.handlesImbalance;
       _interpretable = existingModel.interpretable;
       
-      // Map Lists to Comma-Separated Strings for editing
       _strengthsCtrl.text = existingModel.strengths.join(', ');
       _weaknessesCtrl.text = existingModel.weaknesses.join(', ');
       _useCasesCtrl.text = existingModel.bestUseCases.join(', ');
+      
+      _datasetCtrl.text = existingModel.datasetUsed;
+      _selectedPaperId = existingModel.paperId.isEmpty ? null : existingModel.paperId;
     } else {
       _nameCtrl.clear(); _accuracyCtrl.clear(); _f1Ctrl.clear();
       _precisionCtrl.clear(); _recallCtrl.clear(); _descCtrl.clear();
       _strengthsCtrl.clear(); _weaknessesCtrl.clear(); _useCasesCtrl.clear();
+      _datasetCtrl.clear();
+      _selectedPaperId = null;
       _category = 'Ensemble'; _handlesImbalance = false; _interpretable = false;
     }
 
@@ -606,7 +605,7 @@ class _ModelsTabState extends State<_ModelsTab> {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF161616),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.08))),
-          title: Text(isEdit ? 'Edit Architecture Data' : 'Compile Architecture Point', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          title: Text(isEdit ? 'Edit Model' : 'Add Model', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             child: SingleChildScrollView(
@@ -614,7 +613,7 @@ class _ModelsTabState extends State<_ModelsTab> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 8),
-                  TextField(controller: _nameCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Framework Architecture Name')),
+                  TextField(controller: _nameCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Model Name')),
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -632,54 +631,86 @@ class _ModelsTabState extends State<_ModelsTab> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  TextField(controller: _descCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Technical Overview Summary')),
+                  TextField(controller: _descCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Description')),
                   
                   const SizedBox(height: 14),
-                  // ── NEW INPUTS: STRINGS TO LIST PARSING ENGINE ──
-                  TextField(
-                    controller: _strengthsCtrl, 
-                    maxLines: 2,
-                    style: const TextStyle(color: Colors.white), 
-                    decoration: _FormInputDecoration.build(labelText: 'Empirical Strengths (Comma Separated)'),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _weaknessesCtrl, 
-                    maxLines: 2,
-                    style: const TextStyle(color: Colors.white), 
-                    decoration: _FormInputDecoration.build(labelText: 'Operational Limitations (Comma Separated)'),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _useCasesCtrl, 
-                    maxLines: 2,
-                    style: const TextStyle(color: Colors.white), 
-                    decoration: _FormInputDecoration.build(labelText: 'Target Deployments / Use Cases (Comma Separated)'),
-                  ),
+                  TextField(controller: _datasetCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Dataset Used')),
                   
                   const SizedBox(height: 14),
+
+                  FutureBuilder<List<PaperModel>>(
+                    future: _service.getPapers(),
+                    builder: (context, snapshot) {
+
+                      final papersList = snapshot.data ?? [];
+                      
+                      String? selectedValue;
+                      if (papersList.any((p) => p.id == _selectedPaperId)) {
+                        selectedValue = _selectedPaperId;
+                      }
+
+                      return DropdownButtonFormField<String>(
+                        value: selectedValue,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF1A1A1A),
+                        decoration: _FormInputDecoration.build(labelText: 'Source Research Paper'),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        hint: const Text('Select Research Paper', style: TextStyle(color: Colors.white30, fontSize: 13)),
+                        items: papersList.map((p) {
+                                final String labelText = '${p.authors.split('&').first.trim()} (${p.year}) - ${p.title}';
+                                
+                                return DropdownMenuItem<String>(
+                                  value: p.id,
+                                  child: Text(
+                                    labelText,
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (v) => setDialogState(() => _selectedPaperId = v),
+                            );
+                          },
+                        ),
+                  
+                  const SizedBox(height: 14),
+
                   DropdownButtonFormField<String>(
                     value: _category,
                     dropdownColor: const Color(0xFF1A1A1A),
-                    decoration: _FormInputDecoration.build(labelText: 'Classification Category'),
-                    style: const TextStyle(color: Colors.white),
-                    items: const [
-                      DropdownMenuItem(value: 'Ensemble', child: Text('Ensemble Matrix')),
-                      DropdownMenuItem(value: 'Traditional', child: Text('Traditional Regression')),
-                      DropdownMenuItem(value: 'Deep Learning', child: Text('Deep Learning Network')),
-                    ],
-                    onChanged: (v) => setDialogState(() => _category = v!),
+                    decoration: _FormInputDecoration.build(labelText: 'Category'),
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    items: ['Ensemble', 'Traditional', 'Deep Learning'].map((cat) {
+                      return DropdownMenuItem<String>(
+                        value: cat,
+                        child: Text(cat, style: const TextStyle(fontSize: 13)),
+                      );
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setDialogState(() => _category = v);
+                      }
+                    },
                   ),
+                  const SizedBox(height: 14),
+
+                  TextField(controller: _strengthsCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Strengths (Comma Separated)')),
+                  const SizedBox(height: 14),
+                  TextField(controller: _weaknessesCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Weaknesses (Comma Separated)')),
+                  const SizedBox(height: 14),
+                  TextField(controller: _useCasesCtrl, maxLines: 2, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Best Use Cases (Comma Separated)')),
+                  
                   const SizedBox(height: 8),
                   SwitchListTile(
-                    title: const Text('Handles Imbalance Matrix', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    activeColor: _AdminDashboardScreenState.goldAccent,
+                    title: const Text('Handles Imbalance', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    activeColor: _AdminDashboardScreenState.blueAccent,
                     value: _handlesImbalance,
                     onChanged: (v) => setDialogState(() => _handlesImbalance = v),
                   ),
                   SwitchListTile(
-                    title: const Text('Interpretable Node Logic', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    activeColor: _AdminDashboardScreenState.goldAccent,
+                    title: const Text('Interpretable', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    activeColor: _AdminDashboardScreenState.blueAccent,
                     value: _interpretable,
                     onChanged: (v) => setDialogState(() => _interpretable = v),
                   ),
@@ -688,13 +719,12 @@ class _ModelsTabState extends State<_ModelsTab> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Dismiss', style: TextStyle(color: Colors.white38))),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.goldAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: () async {
                 if (_nameCtrl.text.isEmpty) return;
 
-                // Helper utility expression to turn plain text back into clean arrays
                 List<String> parseCommaString(String input) {
                   if (input.trim().isEmpty) return [];
                   return input.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
@@ -703,6 +733,8 @@ class _ModelsTabState extends State<_ModelsTab> {
                 final modelObj = MlModel(
                   id: isEdit ? existingModel.id : '',
                   name: _nameCtrl.text,
+                  paperId: _selectedPaperId ?? '',
+                  datasetUsed: _datasetCtrl.text.trim().isEmpty ? 'Unified Bug Dataset' : _datasetCtrl.text.trim(),
                   accuracy: double.tryParse(_accuracyCtrl.text) ?? 0.0,
                   f1Score: double.tryParse(_f1Ctrl.text) ?? 0.0,
                   precision: double.tryParse(_precisionCtrl.text) ?? 0.0,
@@ -711,7 +743,6 @@ class _ModelsTabState extends State<_ModelsTab> {
                   category: _category,
                   handlesImbalance: _handlesImbalance,
                   interpretable: _interpretable,
-                  // Map the split string logic safely to parameters
                   strengths: parseCommaString(_strengthsCtrl.text),
                   weaknesses: parseCommaString(_weaknessesCtrl.text),
                   bestUseCases: parseCommaString(_useCasesCtrl.text),
@@ -729,7 +760,7 @@ class _ModelsTabState extends State<_ModelsTab> {
                   widget.onRefreshMetrics(); 
                 }
               },
-              child: Text(isEdit ? 'Save Changes' : 'Push Node', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: Text(isEdit ? 'Save Changes' : 'Add Model', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -746,10 +777,8 @@ class _ModelsTabState extends State<_ModelsTab> {
         
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-          // Add 1 to the count to account for the button at the top
           itemCount: models.length + 1, 
           itemBuilder: (_, i) {
-            // Index 0 renders the Add Button
             if (i == 0) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -760,13 +789,12 @@ class _ModelsTabState extends State<_ModelsTab> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
                   ),
                   icon: const Icon(Icons.add, color: Color(0xFFD4AF37)),
-                  label: const Text('Add Framework Model', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  label: const Text('Add Model', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   onPressed: () => _showFormDialog(),
                 ),
               );
             }
 
-            // Subsequent indices render your data cards (offset by 1)
             final m = models[i - 1]; 
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -785,11 +813,16 @@ class _ModelsTabState extends State<_ModelsTab> {
                     IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent, size: 20), onPressed: () => _showFormDialog(existingModel: m)),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                      onPressed: () async {
-                        await _service.deleteModel(m.id);
-                        _refresh();
-                        widget.onRefreshMetrics();
-                      },
+                      onPressed: () => showDeleteConfirmationDialog(
+                        context,
+                        title: 'Delete Model',
+                        message: 'Are you sure you want to delete "${m.name}"? This action cannot be undone.',
+                        onConfirm: () async {
+                          await _service.deleteModel(m.id);
+                          _refresh();
+                          widget.onRefreshMetrics();
+                        }
+                      ),
                     ),
                   ],
                 ),
@@ -813,10 +846,12 @@ class _PapersTab extends StatefulWidget {
 class _PapersTabState extends State<_PapersTab> {
   final _service = FirestoreService();
   late Future<List<PaperModel>> _future;
+  
   final _titleCtrl = TextEditingController();
   final _authorsCtrl = TextEditingController();
   final _yearCtrl = TextEditingController();
   final _findingsCtrl = TextEditingController();
+  final _modelsEvaluatedCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -838,8 +873,13 @@ class _PapersTabState extends State<_PapersTab> {
       _authorsCtrl.text = existingPaper.authors;
       _yearCtrl.text = existingPaper.year.toString();
       _findingsCtrl.text = existingPaper.keyFindings;
+      _modelsEvaluatedCtrl.text = existingPaper.modelsEvaluated.join(', ');
     } else {
-      _titleCtrl.clear(); _authorsCtrl.clear(); _yearCtrl.clear(); _findingsCtrl.clear();
+      _titleCtrl.clear(); 
+      _authorsCtrl.clear(); 
+      _yearCtrl.clear(); 
+      _findingsCtrl.clear();
+      _modelsEvaluatedCtrl.clear();
     }
 
     showDialog(
@@ -847,7 +887,7 @@ class _PapersTabState extends State<_PapersTab> {
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF161616),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.08))),
-        title: Text(isEdit ? 'Modify Journal Index' : 'Index Research Compendium', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(isEdit ? 'Edit Paper' : 'Add Paper', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.9,
           child: SingleChildScrollView(
@@ -855,32 +895,45 @@ class _PapersTabState extends State<_PapersTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 8),
-                TextField(controller: _titleCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Publication Title')),
+                TextField(controller: _titleCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Title')),
                 const SizedBox(height: 14),
-                TextField(controller: _authorsCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Lead Lead Biographers / Authors')),
+                TextField(controller: _authorsCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Authors')),
                 const SizedBox(height: 14),
-                TextField(controller: _yearCtrl, style: const TextStyle(color: Colors.white), keyboardType: TextInputType.number, decoration: _FormInputDecoration.build(labelText: 'Release Year')),
+                TextField(controller: _yearCtrl, style: const TextStyle(color: Colors.white), keyboardType: TextInputType.number, decoration: _FormInputDecoration.build(labelText: 'Year')),
                 const SizedBox(height: 14),
-                TextField(controller: _findingsCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: _FormInputDecoration.build(labelText: 'Abstract Findings Metric')),
+                TextField(controller: _findingsCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: _FormInputDecoration.build(labelText: 'Key Findings')),
+                
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _modelsEvaluatedCtrl, 
+                  style: const TextStyle(color: Colors.white), 
+                  maxLines: 2,
+                  decoration: _FormInputDecoration.build(labelText: 'Models Evaluated (Comma Separated)'),
+                ),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Dismiss', style: TextStyle(color: Colors.white38))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.goldAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
+              if (_titleCtrl.text.isEmpty) return;
+
+              List<String> parseCommaString(String input) {
+                if (input.trim().isEmpty) return [];
+                return input.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              }
+
               final paperObj = PaperModel(
                 id: isEdit ? existingPaper.id : '',
                 title: _titleCtrl.text,
                 authors: _authorsCtrl.text,
                 year: int.tryParse(_yearCtrl.text) ?? 2026,
                 keyFindings: _findingsCtrl.text,
-                modelsEvaluated: isEdit ? existingPaper.modelsEvaluated : [],
+                modelsEvaluated: parseCommaString(_modelsEvaluatedCtrl.text),
               );
-
-
 
               if (isEdit) {
                 await _service.updatePaper(existingPaper.id, paperObj);
@@ -891,10 +944,10 @@ class _PapersTabState extends State<_PapersTab> {
               if (mounted) {
                 Navigator.pop(context);
                 _refresh();
-                widget.onRefreshMetrics(); // 👈 Add this line
+                widget.onRefreshMetrics();
               }
             },
-            child: Text(isEdit ? 'Save Changes' : 'Index Document', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: Text(isEdit ? 'Save Changes' : 'Add Paper', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -909,22 +962,20 @@ class _PapersTabState extends State<_PapersTab> {
         final papers = snap.data ?? [];
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-          itemCount: papers.length + 1, // Added 1 for the header button
+          itemCount: papers.length + 1,
           itemBuilder: (_, i) {
-            // Index 0 renders the button inline
             if (i == 0) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.04), side: BorderSide(color: Colors.white.withOpacity(0.08)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
                   icon: const Icon(Icons.add, color: AppTheme.success),
-                  label: const Text('Add Research Paper', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  label: const Text('Add Paper', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   onPressed: () => _showFormDialog(),
                 ),
               );
             }
 
-            // Other indices render data (offset by 1)
             final p = papers[i - 1];
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -943,11 +994,16 @@ class _PapersTabState extends State<_PapersTab> {
                     IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent, size: 20), onPressed: () => _showFormDialog(existingPaper: p)),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                      onPressed: () async {
-                        await _service.deletePaper(p.id);
-                        _refresh();
-                        widget.onRefreshMetrics();
-                      },
+                      onPressed: () => showDeleteConfirmationDialog(
+                        context,
+                        title: 'Delete Paper',
+                        message: 'Are you sure you want to delete "${p.title}"? This action cannot be undone.',
+                        onConfirm: () async {
+                          await _service.deletePaper(p.id);
+                          _refresh();
+                          widget.onRefreshMetrics();
+                        }
+                      ),
                     ),
                   ],
                 ),
@@ -1003,25 +1059,25 @@ class _GlossaryTabState extends State<_GlossaryTab> {
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF161616),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.08))),
-        title: Text(isEdit ? 'Update Vocabulary Entry' : 'Append Lexicon Entry', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(isEdit ? 'Edit Term' : 'Add Term', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.9,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              TextField(controller: _termCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Target Term Keyword')),
+              TextField(controller: _termCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Term')),
               const SizedBox(height: 14),
-              TextField(controller: _defCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: _FormInputDecoration.build(labelText: 'Glossary Definition String')),
+              TextField(controller: _defCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: _FormInputDecoration.build(labelText: 'Definition')),
               const SizedBox(height: 14),
-              TextField(controller: _catCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Sorting Taxonomy Category')),
+              TextField(controller: _catCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Category')),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Dismiss', style: TextStyle(color: Colors.white38))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.goldAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               final termObj = GlossaryTerm(
                 id: isEdit ? existingTerm.id : '',
@@ -1029,8 +1085,6 @@ class _GlossaryTabState extends State<_GlossaryTab> {
                 definition: _defCtrl.text,
                 category: _catCtrl.text,
               );
-
-
 
               if (isEdit) {
                 await _service.updateGlossaryTerm(existingTerm.id, termObj);
@@ -1041,10 +1095,10 @@ class _GlossaryTabState extends State<_GlossaryTab> {
               if (mounted) {
                 Navigator.pop(context);
                 _refresh();
-                widget.onRefreshMetrics(); // 👈 Add this line
+                widget.onRefreshMetrics();
               }
             },
-            child: Text(isEdit ? 'Save Changes' : 'Append Core', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: Text(isEdit ? 'Save Changes' : 'Add Term', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1059,22 +1113,20 @@ class _GlossaryTabState extends State<_GlossaryTab> {
         final terms = snap.data ?? [];
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-          itemCount: terms.length + 1, // Added 1 for the header button
+          itemCount: terms.length + 1,
           itemBuilder: (_, i) {
-            // Index 0 renders the button inline
             if (i == 0) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.04), side: BorderSide(color: Colors.white.withOpacity(0.08)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
                   icon: const Icon(Icons.add, color: Color(0xFFD4AF37)),
-                  label: const Text('Add Glossary Term', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  label: const Text('Add Term', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   onPressed: () => _showFormDialog(),
                 ),
               );
             }
 
-            // Other indices render data (offset by 1)
             final t = terms[i - 1];
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -1093,11 +1145,16 @@ class _GlossaryTabState extends State<_GlossaryTab> {
                     IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent, size: 20), onPressed: () => _showFormDialog(existingTerm: t)),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                      onPressed: () async {
-                        await _service.deleteGlossaryTerm(t.id);
-                        _refresh();
-                        widget.onRefreshMetrics();
-                      },
+                      onPressed: () => showDeleteConfirmationDialog(
+                        context,
+                        title: 'Delete Term',
+                        message: 'Are you sure you want to delete "${t.term}"? This action cannot be undone.',
+                        onConfirm: () async {
+                          await _service.deleteGlossaryTerm(t.id);
+                          _refresh();
+                          widget.onRefreshMetrics();
+                        }
+                      ),
                     ),
                   ],
                 ),
@@ -1156,7 +1213,7 @@ class _UsersTabState extends State<_UsersTab> {
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF161616),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white.withOpacity(0.08))),
-        title: Text(isEdit ? 'Modify System Node Identity' : 'Provision Identity Matrix', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(isEdit ? 'Edit User' : 'Add User', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.9,
           child: SingleChildScrollView(
@@ -1164,34 +1221,32 @@ class _UsersTabState extends State<_UsersTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 8),
-                TextField(controller: _nameCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Identity Display Name')),
+                TextField(controller: _nameCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Name')),
                 const SizedBox(height: 14),
-                TextField(controller: _emailCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Communications Route (Email)'), keyboardType: TextInputType.emailAddress),
+                TextField(controller: _emailCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'Email'), keyboardType: TextInputType.emailAddress),
                 const SizedBox(height: 14),
-                TextField(controller: _addressCtrl, style: const TextStyle(color: Colors.white), maxLines: 2, decoration: _FormInputDecoration.build(labelText: 'Physical Matrix Location (Address)')),
+                TextField(controller: _addressCtrl, style: const TextStyle(color: Colors.white), maxLines: 2, decoration: _FormInputDecoration.build(labelText: 'Address')),
                 const SizedBox(height: 14),
-                TextField(controller: _linkedinCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'LinkedIn Professional Node Link')),
+                TextField(controller: _linkedinCtrl, style: const TextStyle(color: Colors.white), decoration: _FormInputDecoration.build(labelText: 'LinkedIn')),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Dismiss', style: TextStyle(color: Colors.white38))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.goldAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(backgroundColor: _AdminDashboardScreenState.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () async {
               if (_nameCtrl.text.isEmpty || _emailCtrl.text.isEmpty) return;
               
               final userObj = UserModel(
-                uid: isEdit ? existingUser.uid : '', // 👈 ADD THIS LINE
+                uid: isEdit ? existingUser.uid : '',
                 displayName: _nameCtrl.text,
                 email: _emailCtrl.text,
-                role: isEdit ? existingUser.role : 'Student', // 👈 ADD THIS LINE
+                role: isEdit ? existingUser.role : 'Student',
                 physicalAddress: _addressCtrl.text,
                 linkedinUrl: _linkedinCtrl.text,
-                
 
-                // 🔐 Preserve existing data during an edit, fallback safely on new provisioning
                 phoneNumber: isEdit ? existingUser.phoneNumber : '',
                 avatarIndex: isEdit ? existingUser.avatarIndex : -1,
                 hasCompletedOnboarding: isEdit ? existingUser.hasCompletedOnboarding : false,
@@ -1201,10 +1256,8 @@ class _UsersTabState extends State<_UsersTab> {
                 bio: isEdit ? existingUser.bio : '',
                 githubUsername: isEdit ? existingUser.githubUsername : '',
                 techStack: isEdit ? existingUser.techStack : const [],
-                createdAt: isEdit ? existingUser.createdAt : DateTime.now(), // Passing type DateTime object                
+                createdAt: isEdit ? existingUser.createdAt : DateTime.now(),                
               );
-
-
 
               if (isEdit) {
                 await _service.updateUser(existingUser.uid, userObj);
@@ -1215,10 +1268,10 @@ class _UsersTabState extends State<_UsersTab> {
               if (mounted) {
                 Navigator.pop(context);
                 _refresh();
-                widget.onRefreshMetrics(); // 👈 Add this line
+                widget.onRefreshMetrics();
               }
             },
-            child: Text(isEdit ? 'Commit Changes' : 'Initialize Node', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: Text(isEdit ? 'Save Changes' : 'Add User', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1230,40 +1283,35 @@ class _UsersTabState extends State<_UsersTab> {
     return FutureBuilder<List<UserModel>>(
       future: _future,
       builder: (_, snap) {
-        // Keep loading indicator centered over the tab body area
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_AdminDashboardScreenState.goldAccent)));
+          return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_AdminDashboardScreenState.blueAccent)));
         }
         
         final users = snap.data ?? [];
 
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-          // If empty, render 2 items (Button + Empty Text Tile). Otherwise, count + 1.
           itemCount: users.isEmpty ? 2 : users.length + 1,
           itemBuilder: (_, i) {
-            // Index 0 always renders the action button
             if (i == 0) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.04), side: BorderSide(color: Colors.white.withOpacity(0.08)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                  icon: const Icon(Icons.person_add, color: _AdminDashboardScreenState.goldAccent),
-                  label: const Text('Provision System User', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  icon: const Icon(Icons.person_add, color: _AdminDashboardScreenState.blueAccent),
+                  label: const Text('Add User', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   onPressed: () => _showFormDialog(),
                 ),
               );
             }
 
-            // Index 1 handles the clean empty message fallback if no records exist
             if (users.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.only(top: 40),
-                child: Center(child: Text('No identity nodes provisioned.', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13))),
+                child: Center(child: Text('No users found.', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13))),
               );
             }
 
-            // Standard data entries mapping (offset by 1)
             final u = users[i - 1];
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -1278,7 +1326,7 @@ class _UsersTabState extends State<_UsersTab> {
                   backgroundColor: Colors.white.withOpacity(0.05),
                   child: Text(
                     u.displayName.isNotEmpty ? u.displayName.substring(0, 1).toUpperCase() : 'U',
-                    style: const TextStyle(color: _AdminDashboardScreenState.goldAccent, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: _AdminDashboardScreenState.blueAccent, fontWeight: FontWeight.bold),
                   ),
                 ),
                 title: Text(u.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)),
@@ -1289,11 +1337,16 @@ class _UsersTabState extends State<_UsersTab> {
                     IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent, size: 20), onPressed: () => _showFormDialog(existingUser: u)),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                      onPressed: () async {
-                        await _service.deleteUser(u.uid);
-                        _refresh();
-                        widget.onRefreshMetrics();
-                      },
+                      onPressed: () => showDeleteConfirmationDialog(
+                        context,
+                        title: 'Delete User',
+                        message: 'Are you sure you want to delete "${u.displayName}"? This action cannot be undone.',
+                        onConfirm: () async {
+                          await _service.deleteUser(u.uid);
+                          _refresh();
+                          widget.onRefreshMetrics();
+                        }
+                      ),
                     ),
                   ],
                 ),

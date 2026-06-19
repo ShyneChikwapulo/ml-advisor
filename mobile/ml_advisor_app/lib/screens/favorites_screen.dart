@@ -11,7 +11,6 @@ import 'model_detail_screen.dart';
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
-  // Luxury UI Palette Cohesion Constants
   static const Color goldAccent = Color(0xFFD4AF37);
   static const Color matteBlackCanvas = Color(0xFF121212);
 
@@ -29,12 +28,11 @@ class FavoritesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── PREMIUM INTEGRATED TITLE HEADER WITH CONDITIONAL BACK BUTTON ──
+            // ── HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 16, 20, 8),
               child: Row(
                 children: [
-                  // Safe dynamic routing stack verification to eliminate black screen bugs
                   if (Navigator.canPop(context)) ...[
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -42,13 +40,13 @@ class FavoritesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                   ] else ...[
-                    const SizedBox(width: 8), // Standard static side-margin compensation
+                    const SizedBox(width: 8),
                   ],
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'BOOKMARKED ARCHITECTURES',
+                        'SAVED MODELS',
                         style: TextStyle(
                           color: goldAccent.withOpacity(0.85),
                           fontSize: 10,
@@ -73,7 +71,7 @@ class FavoritesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // ── MAIN DATA CONTAINER MATRIX PANEL ────────────────────────────────
+            // ── FAVORITES LIST ──
             Expanded(
               child: favoriteModels.isEmpty
                   ? const _EmptyFavoritesView()
@@ -100,7 +98,7 @@ class FavoritesScreen extends StatelessWidget {
   }
 }
 
-// ── CUSTOM HIGH-FIDELITY GLASS FAVORITE TILED CARD ───────────────────────────
+// ── FAVORITE CARD ──
 class _GlassFavoriteCard extends StatelessWidget {
   final MlModel model;
   final VoidCallback onRemove;
@@ -131,7 +129,6 @@ class _GlassFavoriteCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   children: [
-                    // Left Halo Avatar Icon
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -143,7 +140,6 @@ class _GlassFavoriteCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     
-                    // Main Core Text Information Fields
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +170,6 @@ class _GlassFavoriteCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Destructive Crimson Dismiss Bookmark Button
                     IconButton(
                       icon: const Icon(Icons.favorite, color: Colors.pinkAccent, size: 22),
                       splashRadius: 24,
@@ -191,7 +186,7 @@ class _GlassFavoriteCard extends StatelessWidget {
   }
 }
 
-// ── CUSTOMIZED GLASS EMPTY STATE CONTAINER VIEW ──────────────────────────────
+// ── EMPTY STATE ──
 class _EmptyFavoritesView extends StatelessWidget {
   const _EmptyFavoritesView();
 
@@ -218,12 +213,12 @@ class _EmptyFavoritesView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Dossier Archive Empty',
+              'No Favourites Yet',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.3),
             ),
             const SizedBox(height: 8),
             Text(
-              'You haven\'t benchmarked any favorite architectures yet. Tap the heart telemetry badge on any profile view screen to compile data points here.',
+              'Tap the heart icon on any model to save it here.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13, height: 1.4),
             ),
