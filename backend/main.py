@@ -53,7 +53,7 @@ async def chat(request: ChatRequest):
                         {'role': 'system', 'content': system_prompt},
                         {'role': 'user', 'content': request.message}
                     ],
-                    'max_tokens': 500,
+                    'max_tokens': 2000,
                     'temperature': 0.3,
                 }
             )
