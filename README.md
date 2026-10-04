@@ -1,313 +1,138 @@
-
-
-
-
 # ML Advisor
 
-**Machine Learning Model Selection Assistant for Software Bug Prediction**
+A mobile app that helps software engineering students and developers choose a machine-learning model for **software bug prediction**. It combines a model library, side-by-side comparison, a guided recommendation wizard and an AI chat grounded in published research.
 
-ML Advisor helps software engineering students and developers choose the right machine learning models for bug prediction. Browse 8 pre-trained models, compare performance metrics, get personalized recommendations, and access research-backed guidance.
+Capstone project · **API:** <https://ml-advisor-api.onrender.com>
 
----
+> **Team project.** Built by a team of four. See [Team](#team) for who did what.
 
-## 📱 Features
+## Screenshots: 
+![Home View 1](docs/screenshots/home1_MLAdvisor.png)
+![Menu](docs/screenshots/home2_MLAdvisor.png)
+![Comparison](docs/screenshots/comparison.png)
+![Chat](docs/screenshots/chat.png)
+![Home](docs/screenshots/Admin_dashboard.png)
 
-- **Authentication** - Login/Register with role-based access (Student, Developer, Admin)
-- **Model Library** - Browse 8 ML models with search and filter
-- **Model Details** - View accuracy, F1-score, precision, recall, strengths, weaknesses
-- **Compare Models** - Side-by-side comparison with table and bar charts
-- **Recommendations** - Answer 3 questions and get the best model for your context
-- **Favorites** - Save models you like for quick access
-- **Research Papers** - Read summaries of key papers (Albattah & Alzahrani 2024, etc.)
-- **Glossary** - Look up technical terms like F1-score, class imbalance, SMOTE
-- **AI Chat** - Ask questions powered by Ollama + RAG (26 research papers)
-- **Admin Dashboard** - Manage models, papers, and glossary terms
 
----
+## Features
 
-## 🛠️ Tech Stack
+- Email and Google sign-in (Firebase Authentication) with user roles: student, developer and admin.
+- **Model library and detail pages** with performance information drawn from published research.
+- **Comparison view** with bar charts (fl_chart).
+- **Recommendation wizard:** four questions (dataset size, dataset type, priority, class imbalance) feed a weighted scoring routine that ranks models.
+- Favourites, research papers and a glossary.
+- **AI chat:** a FastAPI endpoint matches your question against a curated knowledge base of research summaries and passes the best matches to an LLM.
+- **Admin dashboard:** create, update and delete models, papers, glossary terms and users, with usage analytics.
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Flutter (Dart) |
-| Backend | Python + FastAPI |
-| Database | Firebase Firestore |
-| Authentication | Firebase Auth |
-| AI/LLM | Ollama + Llama 3.2 |
-| Charts | fl_chart |
+## Architecture
 
----
-
-## 💻 Installation Guide (For Non-Technical Users)
-
-### What You Need Before Starting
-
-| Tool | Why You Need It | Where to Get It |
-|------|-----------------|-----------------|
-| **Flutter** | To run the mobile app | [flutter.dev](https://flutter.dev) |
-| **Android Studio** | To run a phone emulator | [developer.android.com/studio](https://developer.android.com/studio) |
-| **Visual Studio Code** | To edit code | [code.visualstudio.com](https://code.visualstudio.com) |
-| **Python** | To run the backend | [python.org](https://python.org) |
-| **Git** | To download the code | [git-scm.com](https://git-scm.com) |
-| **Ollama** | To run the AI chat | [ollama.ai](https://ollama.ai) |
-
----
-
-## Step-by-Step Setup
-
-### Step 1: Install Flutter
-
-**What it does:** Flutter lets you run the mobile app on your computer.
-
-**Instructions:**
-
-1. Go to https://flutter.dev
-2. Click "Get Started" → "Install"
-3. Choose your operating system (Windows/Mac/Linux)
-4. Download the installer
-5. Run the installer (just click Next, Next, Finish)
-6. Open a terminal/command prompt and type: `flutter doctor`
-7. If you see a green checkmark, Flutter is installed
-
-**Common problem:** If `flutter doctor` says "Android license status unknown", run:
-```bash
-flutter doctor --android-licenses
+```mermaid
+flowchart LR
+  A[Flutter app] -->|Auth, models, papers, glossary, favourites| B[(Firebase Auth + Firestore)]
+  A -->|POST /chat| C[FastAPI service on Render]
+  C --> D[Keyword retrieval over research knowledge base]
+  D --> E[OpenRouter: Llama 3.2 3B Instruct]
+  E --> C --> A
 ```
 
-Press "y" and Enter for each prompt.
+The retrieval step is keyword-based: it selects relevant research summaries from `backend/knowledge_base/` and adds them to the prompt. It does not use embeddings or a vector database. The knowledge base was built from 26 peer-reviewed papers.
 
----
+## Tech stack
 
-### Step 2: Install Android Studio (For Emulator)
+| Area | Technology |
+|---|---|
+| Mobile app | Flutter, Dart, Provider, fl_chart |
+| Auth and data | Firebase Authentication, Cloud Firestore |
+| Backend | Python, FastAPI, httpx, python-dotenv |
+| LLM | Llama 3.2 3B Instruct via OpenRouter |
+| Hosting | Render (API) |
 
-**What it does:** Creates a fake phone on your computer so you can see the app.
+## Repository layout
 
-**Instructions:**
-
-1. Go to https://developer.android.com/studio
-2. Download Android Studio for your computer
-3. Install it (just click Next, Next, Finish - takes 10-15 minutes)
-4. Open Android Studio
-5. Click "More Actions" → "Virtual Device Manager"
-6. Click "Create device"
-7. Choose "Pixel 4" → Next
-8. Download "API 33" → Next
-9. Name it "Pixel_4_API_33" → Finish
-10. Click the green play button next to your emulator
-11. A phone window will pop up - this is your emulator
-12. Close Android Studio (keep the phone window open)
-
-**Alternative (Use Your Real Phone):**
-
-- Android: Enable Developer Options → USB Debugging → Plug in your phone
-- iPhone: You need a Mac and Xcode (more complicated)
-
----
-### Step 3: Install Visual Studio Code
-
-**What it does:** Visual Studio Code (VS Code) is where you will edit and manage the project code.
-
-#### Instructions
-
-1. Go to https://code.visualstudio.com
-2. Download the version for your operating system (Windows, Mac, or Linux)
-3. Run the installer and follow the setup steps:
-   - Click **Next**
-   - Click **Next**
-   - Click **Finish**
-4. Open **Visual Studio Code**
-5. On the left sidebar, click the **Extensions** icon  
-   *(it looks like four small squares)*
-6. In the search bar, search for and install the following extensions:
-   - **Flutter** (by Google)
-   - **Dart** (by Google)
-
-#### How to Install Extensions
-
-1. Click on an extension name
-2. Press the **Install** button
-3. Wait for the installation to finish
-4. Repeat for the second extension
-
-#### Why These Extensions Matter
-
-- **Flutter Extension** → Helps you run and debug the Flutter app
-- **Dart Extension** → Adds support for the Dart programming language used by Flutter
-
----
-### Step 4: Install Python
-
-**What it does:** Python is used to run the backend API for the application.
-
-#### Instructions
-
-1. Go to https://python.org
-2. Click **Downloads** and choose your operating system
-3. Download the installer
-4. Run the installer
-
-> **Important:** Make sure to check the box that says **"Add Python to PATH"**
-
-5. Click **Install Now**
-6. Wait for the installation to finish
-
-#### Verify Python Installation
-
-1. Open a terminal or command prompt
-2. Type the following command:
-
-```bash
-python --version
-```
-
-You should see something like
-
-```bash
-Python 3.12.x
-```
----
-### Step 5: Extract the Project Folder
-
-**What it does:** This gives you access to the ML Advisor project files that were provided.
-
-#### Instructions
-
-1. Locate the project ZIP file you received
-2. Right-click the ZIP file
-3. Select **Extract All...** (Windows) or **Open With → Archive Utility** (Mac)
-4. Choose a location where you want to save the project folder
-5. Click **Extract**
-6. Wait for the extraction process to finish
-
-After extracting, you should see a folder named something like:
-ML-Advisor
-
----
-
-### Step 6: Install Ollama (For AI Chat)
-
-**What it does:** Ollama runs the AI model locally on your computer for the AI Chat feature.
-
-#### Instructions
-
-1. Go to https://ollama.ai
-2. Click **Download**
-3. Choose your operating system
-4. Run the installer
-5. Follow the setup steps:
-   - Click **Next**
-   - Click **Next**
-   - Click **Finish**
-
-#### Start Ollama
-
-1. Open a **new terminal** or command prompt  
-   *(keep your other terminal open if needed)*
-2. Run the following command:
-
-```bash
-ollama serve
-```
-3. Leave this terminal running
-- Do not close it while using the AI Chat feature
-
-**Download the AI Model**
-
-1. Open another terminal window
-2. Run the following command:
-```bash
-ollama pull llama3.2
-```
-
-This downloads the AI model used by the application.
-
-Important Notes
-- The download may take 5–10 minutes
-- The model size is approximately 4 GB
-- Make sure you have a stable internet connection
-
----
-
-### Step 7: Set Up the Backend (FastAPI)
-
-**What it does:** The brain of the app — handles recommendations, model data, API endpoints, and backend logic.
-
-#### Instructions:
-
-1. Open a terminal
-
-2. Navigate to the backend folder:
-
-```bash
-cd ml-advisor/backend
-```
-
-3. Create a virtual environment:
-```bash
-python -m venv venv
-```
-
-4. Activate the virtual environment:
-**Windows:**
-```bash
-venv\Scripts\activate
-```
-**Mac/Linux:**
-```bash
-source venv/bin/activate
-```
-5. You should now see (venv) at the beginning of your terminal line
-
-6. Install all required packages:
-```bash
-pip install -r requirements.txt
-```
-
-7. Wait for all packages to install (1–2 minutes)
-8. Start the FastAPI backend server:
-```bash
-uvicorn main:app --reload
-```
-9. You should see:
 ```text
-Uvicorn running on http://127.0.0.1:8000
+backend/
+  main.py                  FastAPI app with the /chat endpoint
+  knowledge_base/          Research summaries and retrieval logic
+  requirements.txt
+mobile/ml_advisor_app/     Flutter app (lib/screens, providers, services, models)
 ```
-Leave this terminal running
 
----
-### Step 8: Set Up the Frontend (Flutter)
+## Getting started
 
-**Instructions:**
+**Prerequisites:** Flutter SDK (Dart >=3.0 <4.0), Python 3.10+, an [OpenRouter](https://openrouter.ai) API key, a Firebase project.
 
-1. Open a NEW terminal
-
-2. Navigate to the Flutter app directory:
+### 1. Backend
 
 ```bash
-cd ml-advisor/mobile/ml_advisor_app
+cd backend
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+echo "OPENROUTER_API_KEY=<your-key>" > .env
+uvicorn main:app --reload --port 8000
 ```
-3. Get all dependencies:
+
+Run it from the `backend/` folder so the `knowledge_base` package is found.
+
+### 2. Mobile app
+
 ```bash
+cd mobile/ml_advisor_app
 flutter pub get
 ```
-4. Wait for packages to download (2–3 minutes)
-5. Make sure your Android emulator is running (or your phone is connected via USB)
-6. Run the app:
-```Bash
+
+By default the app calls the hosted API. To use your local backend, edit `lib/utils/constants.dart`:
+
+- Android emulator: `http://10.0.2.2:8000`
+- iOS simulator: `http://localhost:8000`
+- Physical device: your computer's LAN address, port 8000
+
+Then run:
+
+```bash
 flutter run
 ```
-7. Wait for the app to build (first run may take 3–5 minutes)
-8. The app should appear on your emulator or physical device
 
----
+### 3. Firebase
 
-**You need 3 terminal windows open:**
+The repository contains the Firebase client configuration for the original project. To use your own project, run `flutterfire configure`, enable Email/Password and Google sign-in, and create the Firestore collections the app reads: `models`, `papers`, `glossary`, `favorites`, `users` and `analytics_history`.
 
-| Terminal | What to Type | What It Does |
-|----------|--------------|--------------|
-| **Terminal 1** | `ollama serve` | Starts the AI chat |
-| **Terminal 2** | `cd ml-advisor/backend` then `source venv/bin/activate` (or `venv\Scripts\activate` on Windows) then `uvicorn main:app --reload` | Starts the backend server |
-| **Terminal 3** | `cd ml-advisor/mobile/ml_advisor_app` then `flutter run` | Starts the mobile app |
+> Seed data for these collections is not included in this repository yet.
+<!-- TODO: add your local seed file as e.g. tools/seed_firestore.* (remove any private data first), then replace the note above with run instructions. -->
 
+### 4. Build an Android APK
 
-**Pro tip:** Keep these three terminal windows open and minimized. You'll need them each time.
+```bash
+cd mobile/ml_advisor_app
+flutter build apk --release
+```
+
+The APK is written to `build/app/outputs/flutter-apk/app-release.apk`. The release build currently uses the debug signing key (`android/app/build.gradle.kts`), which is fine for sideloading and demos but not for the Play Store. A published APK is not available yet.
+<!-- TODO: build the APK, attach it to a GitHub Release, then link it here. -->
+
+## Testing
+
+The Flutter project still has the default template widget test. Automated tests for the recommendation logic and the chat endpoint are planned.
+
+## Roadmap
+
+- Authentication and rate limiting for `/chat`; stop returning raw error text to clients
+- Move the recommendation weights into configuration or Firestore
+- Seed script and Firestore security rules in the repository
+- Unit tests for the scoring routine and the knowledge-base retriever
+- Embedding-based retrieval
+
+## Team
+
+| Member | Contribution |
+|---|---|
+| **Shine Chikwapulo** | Team lead; backend, knowledge base and AI chat; most of the Flutter implementation (per commit history); set up the Git workflow |
+| **Henno** | Frontend |
+| **Jayden** | Documentation |
+| **Dube** | Documentation |
+
+<!-- CONFIRM: full names / GitHub handles, and whether "most of the Flutter implementation" is how you want it stated (commits show about 95% of added lines under your two git identities). -->
+
+## Author
+
+Shine Chikwapulo · [GitHub](https://github.com/ShyneChikwapulo) · [LinkedIn](https://www.linkedin.com/in/shine-chikwapulo-741b20265/)
