@@ -11,7 +11,7 @@ Capstone project · **API:** <https://ml-advisor-api.onrender.com>
 ![Menu](docs/screenshots/home2_MLAdvisor.png)
 ![Comparison](docs/screenshots/comparison.png)
 ![Chat](docs/screenshots/chat.png)
-![Home](docs/screenshots/Admin_dashboard.png)
+![Admin Dashboard](docs/screenshots/Admin_Dashboard.png)
 
 
 ## Features
