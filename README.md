@@ -98,7 +98,7 @@ flutter run
 The repository contains the Firebase client configuration for the original project. To use your own project, run `flutterfire configure`, enable Email/Password and Google sign-in, and create the Firestore collections the app reads: `models`, `papers`, `glossary`, `favorites`, `users` and `analytics_history`.
 
 > Seed data for these collections is not included in this repository yet.
-<!-- TODO: add your local seed file as e.g. tools/seed_firestore.* (remove any private data first), then replace the note above with run instructions. -->
+
 
 ### 4. Build an Android APK
 
