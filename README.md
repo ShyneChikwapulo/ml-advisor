@@ -3,7 +3,7 @@
 A mobile app that helps software engineering students and developers choose a machine-learning model for **software bug prediction**. It combines a model library, side-by-side comparison, a guided recommendation wizard and an AI chat grounded in published research.
 
 Capstone project · **API:** <https://ml-advisor-api.onrender.com>
-
+ 
 > **Team project.** Built by a team of four. See [Team](#team) for who did what.
 
 ## Screenshots: 
