@@ -131,7 +131,7 @@ The Flutter project still has the default template widget test. Automated tests 
 | **Jayden** | Documentation |
 | **Dube** | Documentation |
 
-<!-- CONFIRM: full names / GitHub handles, and whether "most of the Flutter implementation" is how you want it stated (commits show about 95% of added lines under your two git identities). -->
+
 
 ## Author
 
